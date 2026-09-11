@@ -20,7 +20,6 @@ class ServerFactory extends Factory
         return [
             'name' => $this->faker->name,
             'hostname' => $this->faker->domainName,
-            'ip_address' => $this->faker->ipv4,
             'ssh_port' => 22,
             'ssh_user' => $this->faker->userName,
             'status' => 'pending',

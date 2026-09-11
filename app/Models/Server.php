@@ -14,7 +14,6 @@ class Server extends Model
     protected $fillable = [
         'name',
         'hostname',
-        'ip_address',
         'ssh_port',
         'ssh_user',
         'status',

@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('servers', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('hostname')->nullable();
-            $table->string('ip_address');
+            $table->string('hostname');
             $table->unsignedSmallInteger('ssh_port')->default(22);
             $table->string('ssh_user');
             $table->string('status')->default('pending');
