@@ -1,0 +1,14 @@
+---
+- name: Get current hostname
+  ansible.builtin.command: scutil --get LocalHostName
+  register: hostname_check
+  changed_when: false
+
+- name: Fail if hostname does not match expected inventory name
+  ansible.builtin.fail:
+    msg: >-
+      Local hostname on {{ inventory_hostname }} is
+      '{{ hostname_check.stdout }}', which does not match the expected
+      hostname. Connect via Screen Sharing and set it under
+      System Settings → General → Sharing → Local Hostname.
+  when: hostname_check.stdout not in inventory_hostname

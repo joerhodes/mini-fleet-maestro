@@ -1,0 +1,12 @@
+---
+- name: Verify Xcode Command Line Tools
+  ansible.builtin.include_tasks: xcode-clt.yml
+
+- name: Verify FileVault is disabled
+  ansible.builtin.include_tasks: filevault.yml
+
+- name: Verify hostname matches inventory name
+  ansible.builtin.include_tasks: hostname.yml
+
+- name: Set power management settings
+  ansible.builtin.include_tasks: power-management.yml

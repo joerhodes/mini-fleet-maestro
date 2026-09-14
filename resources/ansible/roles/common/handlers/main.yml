@@ -1,0 +1,13 @@
+---
+- name: reload pmset enforcer
+  become: true
+  ansible.builtin.command: >-
+    launchctl bootout system/com.local.pmset-enforcer
+  failed_when: false
+  changed_when: false
+
+- name: reload pmset enforcer
+  become: true
+  ansible.builtin.command: >-
+    launchctl bootstrap system /Library/LaunchDaemons/com.local.pmset-enforcer.plist
+  listen: reload pmset enforcer
