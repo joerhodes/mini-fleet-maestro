@@ -1,0 +1,7 @@
+---
+- name: Bootstrap Mac Mini
+  hosts: all
+  gather_facts: true
+
+  roles:
+    - common

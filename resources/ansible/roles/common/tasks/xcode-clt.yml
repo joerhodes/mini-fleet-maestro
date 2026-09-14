@@ -1,0 +1,14 @@
+# resources/ansible/roles/common/tasks/main.yml
+- name: Check if Xcode Command Line Tools are installed
+  ansible.builtin.command: xcode-select -p
+  register: clt_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail with instructions if Xcode Command Line Tools are missing
+  ansible.builtin.fail:
+    msg: >-
+      Xcode Command Line Tools are not installed on {{ inventory_hostname }}.
+      Connect via Screen Sharing and run: xcode-select --install
+      Then re-run this playbook.
+  when: clt_check.rc != 0

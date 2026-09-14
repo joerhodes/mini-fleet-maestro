@@ -1,0 +1,14 @@
+- name: Check FileVault status
+  ansible.builtin.command: fdesetup status
+  register: filevault_check
+  changed_when: false
+  failed_when: false
+
+- name: Fail with instructions if FileVault is enabled
+  ansible.builtin.fail:
+    msg: >-
+      FileVault is enabled on {{ inventory_hostname }}, but must be disabled
+      for headless power-loss recovery. Connect via Screen Sharing and disable
+      it under System Settings → Privacy & Security → FileVault.
+      Then re-run this playbook.
+  when: "'FileVault is On' in filevault_check.stdout"
