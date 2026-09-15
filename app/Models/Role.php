@@ -15,7 +15,7 @@ class Role extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['role', 'label'];
+    protected $fillable = ['role', 'label', 'always_apply'];
 
     public function roleConfigs(): HasMany
     {
