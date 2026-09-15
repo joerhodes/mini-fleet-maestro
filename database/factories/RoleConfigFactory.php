@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
 use App\Models\RoleConfig;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,9 @@ class RoleConfigFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'role' => Role::factory(),
+            'key' => $this->faker->unique()->word(),
+            'value' => $this->faker->sentence(),
         ];
     }
 }
