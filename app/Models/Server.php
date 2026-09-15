@@ -3,13 +3,15 @@
 namespace App\Models;
 
 use App\Enums\ServerStatus;
+use Database\Factories\ServerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Server extends Model
 {
-    /** @use HasFactory<\Database\Factories\ServerFactory> */
+    /** @use HasFactory<ServerFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -30,6 +32,7 @@ class Server extends Model
 
     /**
      * Get the secrets for this server.
+     *
      * @return HasMany<ServerConfig,Server>
      */
     public function secrets(): HasMany
