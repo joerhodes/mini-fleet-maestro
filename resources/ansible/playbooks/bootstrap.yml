@@ -3,5 +3,4 @@
   hosts: all
   gather_facts: true
 
-  roles:
-    - common
+  roles: "{{ app_roles }}"
