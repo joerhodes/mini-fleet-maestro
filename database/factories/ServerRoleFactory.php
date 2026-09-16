@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
+use App\Models\Server;
 use App\Models\ServerRole;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +20,8 @@ class ServerRoleFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'server_id' => Server::factory(),
+            'role' => Role::factory(),
         ];
     }
 }

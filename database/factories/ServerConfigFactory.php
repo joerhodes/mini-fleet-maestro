@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Server;
 use App\Models\ServerConfig;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,9 @@ class ServerConfigFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'server_id' => Server::factory(),
+            'key' => $this->faker->unique()->word(),
+            'value' => $this->faker->sentence(),
         ];
     }
 }
