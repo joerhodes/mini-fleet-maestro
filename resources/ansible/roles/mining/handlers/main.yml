@@ -1,0 +1,11 @@
+---
+- name: restart xmrig
+  become: true
+  ansible.builtin.command: "launchctl bootout system/com.local.xmrig"
+  failed_when: false
+  changed_when: false
+
+- name: restart xmrig
+  become: true
+  ansible.builtin.command: "launchctl bootstrap system /Library/LaunchDaemons/com.local.xmrig.plist"
+  listen: restart xmrig
