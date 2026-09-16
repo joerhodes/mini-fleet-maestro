@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\ServerRoleFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ServerRole extends Model
 {
-    /** @use HasFactory<\Database\Factories\ServerRoleFactory> */
+    /** @use HasFactory<ServerRoleFactory> */
     use HasFactory;
 
     protected $fillable = ['server_id', 'role'];
@@ -20,6 +21,6 @@ class ServerRole extends Model
 
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class, 'role', 'role');
     }
 }
