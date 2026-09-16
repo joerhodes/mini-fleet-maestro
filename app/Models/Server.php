@@ -7,7 +7,6 @@ use Database\Factories\ServerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Server extends Model
 {
@@ -40,8 +39,13 @@ class Server extends Model
         return $this->hasMany(ServerConfig::class);
     }
 
-    public function roles(): HasManyThrough
+    /**
+     * Get the role assignments for this server.
+     *
+     * @return HasMany<ServerRole,Server>
+     */
+    public function roles(): HasMany
     {
-        return $this->hasManyThrough(ServerRole::class, Role::class);
+        return $this->hasMany(ServerRole::class);
     }
 }
