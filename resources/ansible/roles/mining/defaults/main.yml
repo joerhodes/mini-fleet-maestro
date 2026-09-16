@@ -1,0 +1,7 @@
+# roles/mining/defaults/main.yml
+# This information should be collected differently
+# Putting it here for now
+xmrig_download_url: "https://github.com/xmrig/xmrig/releases/download/vX.Y.Z/xmrig-X.Y.Z-macos-arm64.tar.gz"
+xmrig_sha256: "REPLACE_WITH_VERIFIED_HASH"
+xmrig_release_dir: "xmrig-X.Y.Z"
+xmrig_install_dir: "/Users/_xmrig/xmrig"

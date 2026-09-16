@@ -1,6 +1,7 @@
 ---
 - name: Set power management settings
-  ansible.builtin.command: "sudo pmset -a {{ item.key }} {{ item.value }}"
+  become: true
+  ansible.builtin.command: "pmset -a {{ item.key }} {{ item.value }}"
   loop:
     - { key: "sleep", value: "0" }
     - { key: "disablesleep", value: "1" }
@@ -11,22 +12,12 @@
     label: "{{ item.key }} {{ item.value }}"
   changed_when: false
 
-- name: Render pmset-enforcer LaunchDaemon to a temp path
+- name: Deploy pmset-enforcer LaunchDaemon
+  become: true
   ansible.builtin.template:
     src: pmset-enforcer.plist.j2
-    dest: /tmp/com.local.pmset-enforcer.plist
+    dest: /Library/LaunchDaemons/com.local.pmset-enforcer.plist
+    owner: root
+    group: wheel
     mode: "0644"
-  register: plist_render
-
-- name: Move LaunchDaemon plist into place
-  ansible.builtin.command: "sudo cp /tmp/com.local.pmset-enforcer.plist /Library/LaunchDaemons/com.local.pmset-enforcer.plist"
-  when: plist_render.changed
   notify: reload pmset enforcer
-
-- name: Set LaunchDaemon plist ownership
-  ansible.builtin.command: "sudo chown root:wheel /Library/LaunchDaemons/com.local.pmset-enforcer.plist"
-  when: plist_render.changed
-
-- name: Set LaunchDaemon plist permissions
-  ansible.builtin.command: "sudo chmod 644 /Library/LaunchDaemons/com.local.pmset-enforcer.plist"
-  when: plist_render.changed

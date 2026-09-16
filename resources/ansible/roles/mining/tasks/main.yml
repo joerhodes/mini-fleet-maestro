@@ -1,0 +1,12 @@
+---
+- name: Set up xmrig service account
+  ansible.builtin.include_tasks: service-account.yml
+
+- name: Install xmrig
+  ansible.builtin.include_tasks: install.yml
+
+- name: Configure xmrig
+  ansible.builtin.include_tasks: config.yml
+
+- name: Deploy xmrig LaunchDaemon
+  ansible.builtin.include_tasks: daemon.yml
