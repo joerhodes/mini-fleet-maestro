@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\RoleConfigFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RoleConfig extends Model
 {
-    /** @use HasFactory<\Database\Factories\RoleConfigFactory> */
+    /** @use HasFactory<RoleConfigFactory> */
     use HasFactory;
 
     protected $fillable = ['role', 'key', 'value'];
@@ -19,6 +20,6 @@ class RoleConfig extends Model
 
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(Role::class, 'role', 'role');
     }
 }
