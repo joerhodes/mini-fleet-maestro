@@ -1,7 +1,7 @@
 ---
 - name: Set power management settings
   become: true
-  ansible.builtin.command: "pmset -a {{ item.key }} {{ item.value }}"
+  ansible.builtin.command: "pmset -a {{ pmset_setting.key }} {{ pmset_setting.value }}"
   loop:
     - { key: "sleep", value: "0" }
     - { key: "disablesleep", value: "1" }
@@ -9,7 +9,8 @@
     - { key: "womp", value: "1" }
     - { key: "displaysleep", value: "5" }
   loop_control:
-    label: "{{ item.key }} {{ item.value }}"
+    loop_var: pmset_setting
+    label: "{{ pmset_setting.key }} {{ pmset_setting.value }}"
   changed_when: false
 
 - name: Deploy pmset-enforcer LaunchDaemon

@@ -3,4 +3,10 @@
   hosts: all
   gather_facts: true
 
-  roles: "{{ app_roles }}"
+  tasks:
+    - name: Apply assigned roles
+      ansible.builtin.include_role:
+        name: "{{ role_name }}"
+      loop: "{{ app_roles }}"
+      loop_control:
+        loop_var: role_name

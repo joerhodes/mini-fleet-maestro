@@ -15,10 +15,9 @@
     mode: "0755"
 
 - name: Extract xmrig tarball
-  ansible.builtin.unarchive:
-    src: /tmp/xmrig.tar.gz
-    dest: /tmp
-    remote_src: true
+  ansible.builtin.command: "tar -xzf /tmp/xmrig.tar.gz -C /tmp"
+  args:
+    creates: "/tmp/{{ xmrig_release_dir }}/xmrig"
 
 - name: Install xmrig binary
   become: true
