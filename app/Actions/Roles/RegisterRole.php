@@ -8,10 +8,9 @@ class RegisterRole
 {
     public function __invoke(string $role, string $label, bool $alwaysApply = false): Role
     {
-        return Role::create([
-            'role' => $role,
-            'label' => $label,
-            'always_apply' => $alwaysApply,
-        ]);
+        return Role::firstOrCreate(
+            ['role' => $role],
+            ['label' => $label, 'always_apply' => $alwaysApply],
+        );
     }
 }

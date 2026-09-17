@@ -23,3 +23,14 @@ test('defaults always_apply to false when not given', function () {
 
     expect($model->always_apply)->toBeFalse();
 });
+
+test('returns the existing role without creating a duplicate when already registered', function () {
+    Role::factory()->create(['role' => 'feature-role', 'label' => 'Original Label', 'always_apply' => false]);
+    $registerRole = new RegisterRole;
+
+    $model = $registerRole('feature-role', 'New Label', true);
+
+    expect(Role::where('role', 'feature-role')->count())->toBe(1);
+    expect($model->label)->toBe('Original Label');
+    expect((bool) $model->always_apply)->toBeFalse();
+});
