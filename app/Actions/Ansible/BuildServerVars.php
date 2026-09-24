@@ -4,21 +4,19 @@ namespace App\Actions\Ansible;
 
 use App\Models\Role;
 use App\Models\Server;
+use App\Traits\RoleVars;
 use Illuminate\Support\Collection;
-use RuntimeException;
 
 class BuildServerVars
 {
+    use RoleVars;
+
     /**
      * server_config keys that overrode a role_config value of the same name during the last handle() call.
      *
      * @var array<int, string>
      */
     public array $overriddenKeys = [];
-
-    public function __construct(private BuildRoleVars $buildRoleVars)
-    {
-    }
 
     /**
      * @return array<string, mixed>
@@ -29,7 +27,7 @@ class BuildServerVars
 
         $roles = $this->roleSetFor($server);
 
-        $vars = $this->buildRoleVars->handle($roles);
+        $vars = $this->buildRoleVars($roles);
 
         $serverVars = $server->secrets->pluck('value', 'key')->all();
 

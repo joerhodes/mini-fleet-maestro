@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Actions\Ansible;
+namespace App\Traits;
 
+use App\Models\Role;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
-
-class BuildRoleVars
+trait RoleVars
 {
     /**
      * @param Collection<int, Role> $roles
      * @return array<string, mixed>
      */
-    public function handle(Collection $roles): array
+    public function buildRoleVars(Collection $roles): array
     {
         $vars = [];
         $sourceRole = [];
