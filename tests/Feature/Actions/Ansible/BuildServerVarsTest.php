@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Ansible\BuildRoleVars;
 use App\Actions\Ansible\BuildServerVars;
 use App\Models\Role;
 use App\Models\RoleConfig;
@@ -12,7 +13,7 @@ test('returns only always_apply role vars when the server has no assigned roles'
     Role::factory()->create(['role' => 'common', 'always_apply' => true]);
     RoleConfig::factory()->create(['role' => 'common', 'key' => 'ntp_server', 'value' => 'time.apple.com']);
 
-    $vars = (new BuildServerVars)->handle($server);
+    $vars = (new BuildServerVars(new BuildRoleVars))->handle($server);
 
     expect($vars)->toBe([
         'ntp_server' => 'time.apple.com',
@@ -26,7 +27,7 @@ test('includes role_config values for an explicitly assigned role', function () 
     RoleConfig::factory()->create(['role' => 'xmrig', 'key' => 'pool_url', 'value' => 'pool.example.com']);
     ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'xmrig']);
 
-    $vars = (new BuildServerVars)->handle($server);
+    $vars = (new BuildServerVars(new BuildRoleVars))->handle($server);
 
     expect($vars)->toBe([
         'pool_url' => 'pool.example.com',
@@ -39,7 +40,7 @@ test('includes an always_apply role config even without an explicit server_role 
     Role::factory()->create(['role' => 'common', 'always_apply' => true]);
     RoleConfig::factory()->create(['role' => 'common', 'key' => 'ntp_server', 'value' => 'time.apple.com']);
 
-    $vars = (new BuildServerVars)->handle($server);
+    $vars = (new BuildServerVars(new BuildRoleVars))->handle($server);
 
     $this->assertDatabaseMissing('server_roles', ['server_id' => $server->id, 'role' => 'common']);
     expect($vars['ntp_server'])->toBe('time.apple.com');
@@ -53,7 +54,7 @@ test('lets server_config override a role_config value and records the overridden
     ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'xmrig']);
     ServerConfig::factory()->create(['server_id' => $server->id, 'key' => 'pool_url', 'value' => 'override.example.com']);
 
-    $action = new BuildServerVars;
+    $action = new BuildServerVars(new BuildRoleVars);
     $vars = $action->handle($server);
 
     expect($vars['pool_url'])->toBe('override.example.com');
@@ -69,7 +70,7 @@ test('does not throw when two roles define the same role_config key with the sam
     ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'role-a']);
     ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'role-b']);
 
-    $vars = (new BuildServerVars)->handle($server);
+    $vars = (new BuildServerVars(new BuildRoleVars))->handle($server);
 
     expect($vars['shared_key'])->toBe('same');
 });
@@ -83,7 +84,7 @@ test('throws when two roles define the same role_config key with different value
     ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'role-a']);
     ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'role-b']);
 
-    (new BuildServerVars)->handle($server);
+    (new BuildServerVars(new BuildRoleVars))->handle($server);
 })->throws(RuntimeException::class, 'shared_key');
 
 test('includes every applicable role name in app_roles', function () {
@@ -92,7 +93,7 @@ test('includes every applicable role name in app_roles', function () {
     Role::factory()->create(['role' => 'xmrig', 'always_apply' => false]);
     ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'xmrig']);
 
-    $vars = (new BuildServerVars)->handle($server);
+    $vars = (new BuildServerVars(new BuildRoleVars))->handle($server);
 
     expect($vars['app_roles'])->toBe(['common', 'xmrig']);
 });

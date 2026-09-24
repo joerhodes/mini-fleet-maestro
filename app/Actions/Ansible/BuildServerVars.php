@@ -16,6 +16,10 @@ class BuildServerVars
      */
     public array $overriddenKeys = [];
 
+    public function __construct(private BuildRoleVars $buildRoleVars)
+    {
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -25,7 +29,7 @@ class BuildServerVars
 
         $roles = $this->roleSetFor($server);
 
-        $vars = $this->roleConfigVars($roles);
+        $vars = $this->buildRoleVars->handle($roles);
 
         $serverVars = $server->secrets->pluck('value', 'key')->all();
 
@@ -52,30 +56,5 @@ class BuildServerVars
         $alwaysApplyRoles = Role::where('always_apply', true)->with('roleConfigs')->get();
 
         return $assignedRoles->merge($alwaysApplyRoles)->unique('role')->values();
-    }
-
-    /**
-     * @param  Collection<int, Role>  $roles
-     * @return array<string, mixed>
-     */
-    private function roleConfigVars(Collection $roles): array
-    {
-        $vars = [];
-        $sourceRole = [];
-
-        foreach ($roles as $role) {
-            foreach ($role->roleConfigs as $config) {
-                if (array_key_exists($config->key, $vars) && $vars[$config->key] !== $config->value) {
-                    throw new RuntimeException(
-                        "Role config key [{$config->key}] is defined with conflicting values by roles [{$sourceRole[$config->key]}] and [{$role->role}]."
-                    );
-                }
-
-                $vars[$config->key] = $config->value;
-                $sourceRole[$config->key] = $role->role;
-            }
-        }
-
-        return $vars;
     }
 }
