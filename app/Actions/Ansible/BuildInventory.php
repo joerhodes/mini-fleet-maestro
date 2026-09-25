@@ -13,9 +13,23 @@ class BuildInventory
     use RoleSets;
     use RoleVars;
 
+    /**
+     * Build the contents of Ansible's `all` group for the given servers.
+     *
+     * Every server is listed under `hosts` with its connection vars and secrets, so servers
+     * with no assigned roles still receive always_apply roles. Each assigned role becomes a
+     * child group whose `hosts` names only the given servers that have that role.
+     *
+     * @param  Collection<int, Server>  $servers
+     * @return array{
+     *     vars?: array<string, mixed>,
+     *     hosts?: array<string, array<string, mixed>>,
+     *     children?: array<string, array{vars: array<string, mixed>, hosts: array<string, null>}>
+     * }
+     */
     public function handle(Collection $servers): array
     {
-        if (!$servers->count()) {
+        if ($servers->isEmpty()) {
             return [];
         }
 
@@ -28,23 +42,33 @@ class BuildInventory
             $all['vars'] = $commonVars;
         }
 
-        $assignedRoles = $this->roleSetFor($servers);
-        $roles = Role::whereIn('role', $assignedRoles->pluck('role')->toArray())->get();
+        $all['hosts'] = $servers->mapWithKeys(function (Server $server) {
+            return [$server->name => $this->varsForServer($server)];
+        })->all();
 
-        if ($roles->count()) {
-            $all['children'] = $roles->map(function ($role) {
+        $assignedRoles = $this->roleSetFor($servers)->sortBy('role');
+
+        if ($assignedRoles->isNotEmpty()) {
+            $all['children'] = $assignedRoles->mapWithKeys(function (Role $role) use ($servers) {
+                $memberServers = $servers->filter(function (Server $server) use ($role) {
+                    return $server->roles->contains('role', $role->role);
+                });
+
                 return [$role->role => [
                     'vars' => $this->buildRoleVars(collect([$role])),
-                    'hosts' => $role->servers->map(function ($server) {
-                        return [$server->name => $this->varsForServer($server)];
-                    })->toArray()
+                    'hosts' => $memberServers->mapWithKeys(function (Server $server) {
+                        return [$server->name => null];
+                    })->all(),
                 ]];
-            })->toArray();
+            })->all();
         }
 
         return $all;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     protected function varsForServer(Server $server): array
     {
         return array_merge([
