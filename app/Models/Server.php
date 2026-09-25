@@ -6,6 +6,7 @@ use App\Enums\ServerStatus;
 use Database\Factories\ServerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Server extends Model
@@ -40,12 +41,12 @@ class Server extends Model
     }
 
     /**
-     * Get the role assignments for this server.
+     * Get the roles  for this server.
      *
-     * @return HasMany<ServerRole,Server>
+     * @return BelongsToMany<Role,Server>
      */
-    public function roles(): HasMany
+    public function roles(): BelongsToMany
     {
-        return $this->hasMany(ServerRole::class);
+        return $this->belongsToMany(Role::class, 'server_roles', 'server_id', 'role');
     }
 }
