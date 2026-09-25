@@ -18,13 +18,14 @@ class BuildInventory
      *
      * Every server is listed under `hosts` with its connection vars and secrets, so servers
      * with no assigned roles still receive always_apply roles. Each assigned role becomes a
-     * child group whose `hosts` names only the given servers that have that role.
+     * child group whose `hosts` names only the given servers that have that role. Group `vars`
+     * are omitted when the role has no config, since Ansible rejects an empty list as `vars`.
      *
      * @param  Collection<int, Server>  $servers
      * @return array{
      *     vars?: array<string, mixed>,
      *     hosts?: array<string, array<string, mixed>>,
-     *     children?: array<string, array{vars: array<string, mixed>, hosts: array<string, null>}>
+     *     children?: array<string, array{vars?: array<string, mixed>, hosts: array<string, null>}>
      * }
      */
     public function handle(Collection $servers): array
@@ -54,12 +55,17 @@ class BuildInventory
                     return $server->roles->contains('role', $role->role);
                 });
 
-                return [$role->role => [
-                    'vars' => $this->buildRoleVars(collect([$role])),
-                    'hosts' => $memberServers->mapWithKeys(function (Server $server) {
-                        return [$server->name => null];
-                    })->all(),
-                ]];
+                $group = [];
+
+                if ($groupVars = $this->buildRoleVars(collect([$role]))) {
+                    $group['vars'] = $groupVars;
+                }
+
+                $group['hosts'] = $memberServers->mapWithKeys(function (Server $server) {
+                    return [$server->name => null];
+                })->all();
+
+                return [$role->role => $group];
             })->all();
         }
 
