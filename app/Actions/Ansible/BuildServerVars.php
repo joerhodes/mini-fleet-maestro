@@ -4,11 +4,13 @@ namespace App\Actions\Ansible;
 
 use App\Models\Role;
 use App\Models\Server;
+use App\Traits\RoleSets;
 use App\Traits\RoleVars;
 use Illuminate\Support\Collection;
 
 class BuildServerVars
 {
+    use RoleSets;
     use RoleVars;
 
     /**
@@ -25,7 +27,7 @@ class BuildServerVars
     {
         $this->overriddenKeys = [];
 
-        $roles = $this->roleSetFor($server);
+        $roles = $this->roleSetFor(collect([$server]), true);
 
         $vars = $this->buildRoleVars($roles);
 
@@ -40,19 +42,19 @@ class BuildServerVars
         return $vars;
     }
 
-    /**
-     * The union of this server's assigned roles and every always_apply role.
-     *
-     * @return Collection<int, Role>
-     */
-    private function roleSetFor(Server $server): Collection
-    {
-        $assignedRoleNames = $server->roles->pluck('role');
-
-        $assignedRoles = Role::whereIn('role', $assignedRoleNames)->with('roleConfigs')->get();
-
-        $alwaysApplyRoles = Role::where('always_apply', true)->with('roleConfigs')->get();
-
-        return $assignedRoles->merge($alwaysApplyRoles)->unique('role')->values();
-    }
+//     /**
+//      * The union of this server's assigned roles and every always_apply role.
+//      *
+//      * @return Collection<int, Role>
+//      */
+//     private function roleSetFor(Server $server): Collection
+//     {
+//         $assignedRoleNames = $server->roles->pluck('role');
+//
+//         $assignedRoles = Role::whereIn('role', $assignedRoleNames)->with('roleConfigs')->get();
+//
+//         $alwaysApplyRoles = Role::where('always_apply', true)->with('roleConfigs')->get();
+//
+//         return $assignedRoles->merge($alwaysApplyRoles)->unique('role')->values();
+//     }
 }
