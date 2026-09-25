@@ -118,3 +118,13 @@ test('excludes servers that were not given even when they share an assigned role
     expect(array_keys($inventory['hosts']))->toBe(['msv05']);
     expect($inventory['children']['xmrig']['hosts'])->toBe(['msv05' => null]);
 });
+
+test('omits group vars for an assigned role that has no config', function () {
+    $server = Server::factory()->create(['name' => 'msv05']);
+    Role::factory()->create(['role' => 'xmrig', 'always_apply' => false]);
+    ServerRole::factory()->create(['server_id' => $server->id, 'role' => 'xmrig']);
+
+    $inventory = (new BuildInventory)->handle(collect([$server]));
+
+    expect($inventory['children'])->toBe(['xmrig' => ['hosts' => ['msv05' => null]]]);
+});
