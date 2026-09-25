@@ -2,7 +2,7 @@
 
 use App\Models\Role;
 use App\Models\RoleConfig;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 test('roleConfigs returns the role configs belonging to the role', function () {
     $role = Role::factory()->create(['role' => 'feature-role']);
@@ -18,5 +18,5 @@ test('roleConfigs returns the role configs belonging to the role', function () {
 test('servers relation does not throw', function () {
     $role = Role::factory()->create();
 
-    expect($role->servers())->toBeInstanceOf(HasManyThrough::class);
+    expect($role->servers())->toBeInstanceOf(BelongsToMany::class);
 });
