@@ -18,7 +18,6 @@ test('it builds role set for servers', function () {
 
     $result = $sut->roleSetFor(collect([$server]));
 
-
     expect($result->pluck('role')->all())->toContain($serverRole->role);
     expect($result->pluck('role')->all())->not()->toContain($commonRole->role);
 });

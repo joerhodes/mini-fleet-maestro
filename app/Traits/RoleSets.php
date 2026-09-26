@@ -9,13 +9,15 @@ trait RoleSets
 {
     public function roleSetFor(Collection $servers, bool $includeAlwaysApplyRoles = false): Collection
     {
-        $roles = $servers->flatMap(function ($server) {
-            return $server->roles;
-        })->unique();
+        $roles = collect([]);
 
         if ($includeAlwaysApplyRoles) {
-            $roles = $roles->merge(Role::where('always_apply', true)->get());
+            $roles = Role::where('always_apply', true)->get();
         }
+
+        $roles = $roles->merge($servers->flatMap(function ($server) {
+            return $server->roles;
+        })->unique());
 
         return $roles;
     }
