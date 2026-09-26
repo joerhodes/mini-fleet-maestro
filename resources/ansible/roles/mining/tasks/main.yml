@@ -1,4 +1,16 @@
 ---
+- name: Verify xmrig variables are present
+  ansible.builtin.assert:
+    that:
+      - xmrig_pool_url is defined
+      - xmrig_wallet_id is defined
+      - xmrig_rig_id is defined
+    fail_msg: "Missing xmrig config; check role_config / server_config"
+
+- name: Show non-secret values
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }}: rig '{{ xmrig_rig_id }}' → {{ xmrig_pool_url }}"
+
 - name: Set up xmrig service account
   ansible.builtin.include_tasks: service-account.yml
 

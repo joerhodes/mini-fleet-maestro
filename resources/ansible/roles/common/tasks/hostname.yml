@@ -3,6 +3,7 @@
   ansible.builtin.command: scutil --get LocalHostName
   register: hostname_check
   changed_when: false
+  check_mode: false
 
 - name: Fail if hostname does not match expected inventory name
   ansible.builtin.fail:

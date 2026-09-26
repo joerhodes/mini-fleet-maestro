@@ -28,3 +28,4 @@
     group: staff
     mode: "0755"
     remote_src: true
+  ignore_errors: "{{ ansible_check_mode }}"

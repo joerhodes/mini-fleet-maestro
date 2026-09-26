@@ -4,6 +4,7 @@
   register: clt_check
   changed_when: false
   failed_when: false
+  check_mode: false
 
 - name: Fail with instructions if Xcode Command Line Tools are missing
   ansible.builtin.fail:

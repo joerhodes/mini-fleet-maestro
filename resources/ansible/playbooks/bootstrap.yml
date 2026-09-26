@@ -6,7 +6,7 @@
   tasks:
     - name: Apply assigned roles
       ansible.builtin.include_role:
-        name: "{{ role_name }}"
+        name: "{{ app_role }}"
       loop: "{{ app_roles }}"
       loop_control:
-        loop_var: role_name
+        loop_var: app_role
