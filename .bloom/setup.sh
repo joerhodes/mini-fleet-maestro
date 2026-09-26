@@ -1,28 +1,23 @@
 #!/usr/bin/env bash
+# .bloom/setup.sh
+set -euo pipefail
 
-# Stop on errors or unset variables.
-set -eu
+# Keep in sync with archive.sh
+SITE="mfm-$(printf '%s' "$BLOOM_WORKSPACE_ID" | tr -cd '[:alnum:]' | tr '[:upper:]' '[:lower:]' | cut -c1-10)"
 
-# Bloom provides the original checkout path and this workspace's ID.
-# Start with the original project's environment settings.
 cp "$BLOOM_ROOT_PATH/.env" .env
+sed -i '' "s|^APP_URL=.*|APP_URL=https://$SITE.test|" .env
+# Only needed if your root .env sets SESSION_DOMAIN:
+# sed -i '' "s|^SESSION_DOMAIN=.*|SESSION_DOMAIN=$SITE.test|" .env
 
-# Give this workspace its own HTTPS .test domain with Laravel Valet.
-SITE="my-app-$(printf '%s' "$BLOOM_WORKSPACE_ID" | tr -cd '[:alnum:]' | cut -c1-10)"
 herd link "$SITE"
 herd secure "$SITE"
-sed -i '' "s|^APP_URL=.*|APP_URL=https://$SITE.test|" .env
+echo "https://$SITE.test" > "$BLOOM_URL_FILE"
 
-# Use a separate SQLite database so the main checkout is untouched.
-# Only create it if it doesn't exist, so setup can run again.
-if [ ! -f database/database.sqlite ]; then
-    touch database/database.sqlite
-fi
+[ -f database/database.sqlite ] || touch database/database.sqlite
 
-# Install PHP and JavaScript dependencies, then build the frontend assets.
-composer install
-npm install
+composer install --quiet
+npm ci --quiet
 npm run build
 
-# Create the tables and seed the workspace database with initial data.
 php artisan migrate --seed --force

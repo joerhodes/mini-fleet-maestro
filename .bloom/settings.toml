@@ -1,0 +1,4 @@
+# .bloom/settings.toml
+[scripts]
+setup_file = ".bloom/setup.sh"
+archive_file = ".bloom/archive.sh"

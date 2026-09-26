@@ -40,15 +40,14 @@ provisioning tool for a fleet of Mac Minis. Portfolio piece + real infrastructur
   fleet size, hostnames, or DNS names even when "sensitive" fields are
   gitignored. `AnsibleRunner` (planned) generates a temp inventory per run,
   sourced from the `servers` table, written under `storage/app/`.
-- **Ansible privilege escalation: explicit `sudo` in the command string,
-  not `become: true`.** `become` wraps commands in a shell
-  (`sudo ... /bin/sh -c '...'`), which doesn't match narrowly-scoped sudoers
-  entries — sudo ends up authorizing `/bin/sh`, not the actual binary. Use
-  `ansible.builtin.command: "sudo <binary> ..."` instead, so sudo sees the
-  real command and narrow sudoers rules work as written.
-- **Sudoers entries must use the exact binary path** — verify with `which`,
-  don't assume `/usr/bin/x` vs `/bin/x`. Got bitten by this once (`cp` is
-  `/bin/cp` on macOS, not `/usr/bin/cp`).
+- **Ansible privilege escalation: use `become: true`.** Minis have
+  passwordless sudo for the SSH user (`ALL=(root) NOPASSWD: ALL`). Use
+  normal module forms (`template`, `copy`, `file`, `command`) with
+  `become: true` for anything needing root, including writing directly to
+  root-owned paths like `/Library/LaunchDaemons`. Don't render to `/tmp`
+  and `sudo cp`, and don't put `sudo` in command strings.
+- **Security boundary is SSH access, not sudoers.** The Maestro SSH key is
+  effectively root on every Mini; key/access hardening belongs there.
 - **Ansible task files are split by concern**, not one long `main.yml`.
   `roles/<role>/tasks/main.yml` is a thin index using `include_tasks`;
   each concern gets its own file (e.g. `xcode-clt.yml`, `filevault.yml`).
@@ -96,9 +95,44 @@ Config: `config/ansible.php`, `paths.roles` / `paths.playbooks` (nested under
 `paths` since more path-like config is expected — inventory temp dir,
 possibly an explicit ansible binary path).
 
-`common` role verified working end-to-end against a real Mini (`msv05`) as of
-this writing: Xcode CLT check, FileVault check, pmset settings + enforcer
-LaunchDaemon all passing.
+The `common` and `mining` roles have been verified manually against real
+hardware. Verification against real Minis is done by Joe, never by an agent.
+
+- Never connect to real fleet hosts (ssh, scp, ansible, ansible-playbook)
+  unless explicitly asked in the current task.
+- Tests must never spawn real processes. Fake them with `Process::fake()`.
+- Test hostnames use the `.invalid` TLD (e.g. `mini01.invalid`), never
+  real fleet names and never `.test`.
+
+## Actions
+
+- `app/Actions/Ansible/BuildServerVars.php` — one server's Ansible host vars
+  as an array: connection vars (`ansible_host`/`ansible_user`/`ansible_port`),
+  `server_config` values, and `app_roles` (`always_apply` roles first, then
+  assigned roles, each tier sorted by name).
+- `app/Actions/Ansible/BuildInventory.php` — full inventory array for a given
+  Collection of servers (caller decides which; no status filtering inside).
+  Hosts defined once under `all.hosts` via `BuildServerVars`; one child group
+  per assigned role with that role's `role_config` as group vars;
+  `always_apply` roles' `role_config` goes in `all.vars`. Only groups that
+  have hosts are emitted.
+
+## Commands
+
+- `ansible:inventory {servers?* : Server names (default: all)}` - Output the Ansible inventory for the given servers, or all servers
+- `ansible:vars {server} {--output=}` - Output the merged Ansible variables for a server
+- `role:config {role} {key} {value}` - Set a configuration value for a role
+- `role:config-delete {role} {key}` - Delete a configuration value for a role
+- `role:config-list {role}` - List all configuration values for a role
+- `role:list` - List discovered Ansible roles and their registration status
+- `role:register {role} {label} {--always-apply}` - Register a discovered role with a label and optional `always_apply` flag
+- `server:add {name} {hostname} {ssh-user} {--ssh-port=22}` - Register or update a server (upsert by name)
+- `server:config {server} {key} {value}` - Set a configuration value for a server
+- `server:config-delete {server} {key}` - Delete a configuration value for a server
+- `server:config-list {server}` - List all configuration values for a server
+- `server:list` - List all registered servers
+- `server:role-add {server} {roles*}` - Add one or more roles to a server
+- `server:role-remove {server} {roles*}` - Remove one or more roles from a server
 
 ## Services
 
@@ -108,20 +142,21 @@ LaunchDaemon all passing.
   - `registered()` — `Role::pluck('role')`
   - `unregistered()` — `discovered()` diff `registered()`
   - `assignable()` — registered roles where `always_apply = false`
-- `app/Services/AnsibleRunner.php` — **planned, not yet built.** Will shell
-  out to `ansible-playbook` via Symfony `Process`, generating a temp
-  inventory from the `servers` table per run.
+- `app/Services/AnsibleRunner.php` — **planned, not yet built.** Wraps the
+  manually verified sequence: call `BuildInventory` directly, write JSON to
+  a per-run file under `storage/app/private/` (mode `0600`, deleted in
+  `finally`), run `ansible-playbook` via Laravel's `Process` facade (not Symfony
+  `Process` directly; `Process::fake()` is the testing strategy), with `cwd` set to
+  `resources/ansible` (so `ansible.cfg` is picked up), an explicit timeout
+  (never the 60s default), and an explicit binary path (no PATH reliance).
+  Returns a result carrying the exit code (0 ok / 2 host failure /
+  4 unreachable), not just pass/fail.
 
 ## Not yet built
 
-- `AnsibleRunner` and the inventory-generation piece above
-- Artisan commands for server registration + triggering Ansible runs
-  (intent: same underlying Action classes usable from both CLI and UI —
-  UI is deliberately being deferred while these are built)
+- `AnsibleRunner` (above) and an Artisan command to trigger runs
+  (e.g. `ansible:run <playbook> --server=... --check`), synchronous first
 - `EditServer` Livewire component
 - Add Server modal (two-step: instructions, then `ServerForm`)
-- xmrig role (bootstrap install + LaunchDaemon, replacing an old
-  auto-login + Automator approach — abandoned in favor of a LaunchDaemon,
-  same pattern as `power-management.yml`)
 - MFA on this app (planned tie-in with a separate MFA learning project once
   Fortify's TOTP support is wired up)
