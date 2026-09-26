@@ -38,8 +38,9 @@ provisioning tool for a fleet of Mac Minis. Portfolio piece + real infrastructur
   - `role_config` — shared secret/config per role (e.g. `wallet_id`, `pool_url`)
 - **Ansible inventory is never a committed file.** A static inventory leaks
   fleet size, hostnames, or DNS names even when "sensitive" fields are
-  gitignored. `AnsibleRunner` (planned) generates a temp inventory per run,
-  sourced from the `servers` table, written under `storage/app/`.
+  gitignored. `AnsibleRunner` generates a temp inventory per run, sourced from the
+  `servers` table, written (0600) under `storage/app/private/ansible/` and
+  deleted in a `finally` block. Never log or echo its contents.
 - **Ansible privilege escalation: use `become: true`.** Minis have
   passwordless sudo for the SSH user (`ALL=(root) NOPASSWD: ALL`). Use
   normal module forms (`template`, `copy`, `file`, `command`) with
@@ -91,9 +92,9 @@ resources/ansible/
         pmset-enforcer.plist.j2
 ```
 
-Config: `config/ansible.php`, `paths.roles` / `paths.playbooks` (nested under
-`paths` since more path-like config is expected — inventory temp dir,
-possibly an explicit ansible binary path).
+Config: `config/ansible.php` — `paths.root` / `paths.roles` / `paths.playbooks` /
+`paths.inventory` (nested under `paths`), plus `binary` (`ANSIBLE_PLAYBOOK_BIN`)
+and `timeout` (`ANSIBLE_TIMEOUT`, default 1800s).
 
 The `common` and `mining` roles have been verified manually against real
 hardware. Verification against real Minis is done by Joe, never by an agent.
@@ -133,6 +134,12 @@ hardware. Verification against real Minis is done by Joe, never by an agent.
 - `server:list` - List all registered servers
 - `server:role-add {server} {roles*}` - Add one or more roles to a server
 - `server:role-remove {server} {roles*}` - Remove one or more roles from a server
+- `ansible:inventory {servers?*}` — print the inventory JSON for the named
+  servers, or all.
+- `ansible:run {playbook} {--server=*} {--all} {--check} {--diff}` — run a
+  playbook through `AnsibleRunner`, streaming output live. Requires exactly one
+  of `--server` / `--all` (never the whole fleet by default). Prints an outcome
+  summary and exits with Ansible's exit code.
 
 ## Services
 
@@ -142,20 +149,19 @@ hardware. Verification against real Minis is done by Joe, never by an agent.
   - `registered()` — `Role::pluck('role')`
   - `unregistered()` — `discovered()` diff `registered()`
   - `assignable()` — registered roles where `always_apply = false`
-- `app/Services/AnsibleRunner.php` — **planned, not yet built.** Wraps the
-  manually verified sequence: call `BuildInventory` directly, write JSON to
-  a per-run file under `storage/app/private/` (mode `0600`, deleted in
-  `finally`), run `ansible-playbook` via Laravel's `Process` facade (not Symfony
-  `Process` directly; `Process::fake()` is the testing strategy), with `cwd` set to
-  `resources/ansible` (so `ansible.cfg` is picked up), an explicit timeout
-  (never the 60s default), and an explicit binary path (no PATH reliance).
-  Returns a result carrying the exit code (0 ok / 2 host failure /
-  4 unreachable), not just pass/fail.
+- `app/Services/AnsibleRunner.php` — `run($playbook, $servers, $check, $diff, $onOutput)`:
+  builds the inventory via `BuildInventory`, writes it to a temp file, runs
+  `ansible-playbook` (Laravel `Process`, array-form command, `--limit` the
+  server names) from `paths.root`, deletes the file, and returns an
+  `App\Support\Ansible\AnsibleRunResult` (`exitCode`, `output`, `errorOutput`,
+  `outcome()`). Playbook names must match `[A-Za-z0-9_-]+` and exist under
+  `paths.playbooks`; otherwise `InvalidArgumentException`. Synchronous only.
+- `App\Enums\AnsibleRunOutcome::fromExitCode()` is the single exit-code mapping:
+  0 Success, 2 HostFailed, 4 Unreachable (verified on Ansible core 2.21),
+  anything else Error.
 
 ## Not yet built
 
-- `AnsibleRunner` (above) and an Artisan command to trigger runs
-  (e.g. `ansible:run <playbook> --server=... --check`), synchronous first
 - `EditServer` Livewire component
 - Add Server modal (two-step: instructions, then `ServerForm`)
 - MFA on this app (planned tie-in with a separate MFA learning project once
