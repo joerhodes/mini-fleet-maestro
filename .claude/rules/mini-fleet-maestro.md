@@ -38,8 +38,9 @@ provisioning tool for a fleet of Mac Minis. Portfolio piece + real infrastructur
   - `role_config` — shared secret/config per role (e.g. `wallet_id`, `pool_url`)
 - **Ansible inventory is never a committed file.** A static inventory leaks
   fleet size, hostnames, or DNS names even when "sensitive" fields are
-  gitignored. `AnsibleRunner` (planned) generates a temp inventory per run,
-  sourced from the `servers` table, written under `storage/app/`.
+  gitignored. `AnsibleRunner` generates a temp inventory per run, sourced from the
+  `servers` table, written (0600) under `storage/app/private/ansible/` and
+  deleted in a `finally` block. Never log or echo its contents.
 - **Ansible privilege escalation: explicit `sudo` in the command string,
   not `become: true`.** `become` wraps commands in a shell
   (`sudo ... /bin/sh -c '...'`), which doesn't match narrowly-scoped sudoers
@@ -92,9 +93,9 @@ resources/ansible/
         pmset-enforcer.plist.j2
 ```
 
-Config: `config/ansible.php`, `paths.roles` / `paths.playbooks` (nested under
-`paths` since more path-like config is expected — inventory temp dir,
-possibly an explicit ansible binary path).
+Config: `config/ansible.php` — `paths.root` / `paths.roles` / `paths.playbooks` /
+`paths.inventory` (nested under `paths`), plus `binary` (`ANSIBLE_PLAYBOOK_BIN`)
+and `timeout` (`ANSIBLE_TIMEOUT`, default 1800s).
 
 `common` role verified working end-to-end against a real Mini (`msv05`) as of
 this writing: Xcode CLT check, FileVault check, pmset settings + enforcer
@@ -108,13 +109,29 @@ LaunchDaemon all passing.
   - `registered()` — `Role::pluck('role')`
   - `unregistered()` — `discovered()` diff `registered()`
   - `assignable()` — registered roles where `always_apply = false`
-- `app/Services/AnsibleRunner.php` — **planned, not yet built.** Will shell
-  out to `ansible-playbook` via Symfony `Process`, generating a temp
-  inventory from the `servers` table per run.
+- `app/Services/AnsibleRunner.php` — `run($playbook, $servers, $check, $diff, $onOutput)`:
+  builds the inventory via `BuildInventory`, writes it to a temp file, runs
+  `ansible-playbook` (Laravel `Process`, array-form command, `--limit` the
+  server names) from `paths.root`, deletes the file, and returns an
+  `App\Support\Ansible\AnsibleRunResult` (`exitCode`, `output`, `errorOutput`,
+  `outcome()`). Playbook names must match `[A-Za-z0-9_-]+` and exist under
+  `paths.playbooks`; otherwise `InvalidArgumentException`. Synchronous only.
+- `App\Enums\AnsibleRunOutcome::fromExitCode()` is the single exit-code mapping:
+  0 Success, 2 HostFailed, 4 Unreachable (verified on Ansible core 2.21),
+  anything else Error.
+
+## Commands
+
+- `ansible:inventory {servers?*}` — print the inventory JSON for the named
+  servers, or all.
+- `ansible:run {playbook} {--server=*} {--all} {--check} {--diff}` — run a
+  playbook through `AnsibleRunner`, streaming output live. Requires exactly one
+  of `--server` / `--all` (never the whole fleet by default). Prints an outcome
+  summary and exits with Ansible's exit code.
+- Both share server-name resolution via `App\Traits\ResolvesServers`.
 
 ## Not yet built
 
-- `AnsibleRunner` and the inventory-generation piece above
 - Artisan commands for server registration + triggering Ansible runs
   (intent: same underlying Action classes usable from both CLI and UI —
   UI is deliberately being deferred while these are built)
