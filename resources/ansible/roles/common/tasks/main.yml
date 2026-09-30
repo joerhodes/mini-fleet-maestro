@@ -10,3 +10,6 @@
 
 - name: Set power management settings
   ansible.builtin.include_tasks: power-management.yml
+
+- name: Fix audiomxd feature-flag spin loop
+  ansible.builtin.include_tasks: audiomxd.yml

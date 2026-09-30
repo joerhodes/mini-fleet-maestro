@@ -9,3 +9,9 @@
   become: true
   ansible.builtin.command: "launchctl bootstrap system /Library/LaunchDaemons/com.local.pmset-enforcer.plist"
   listen: reload pmset enforcer
+
+- name: Reboot to apply feature flags
+  become: true
+  ansible.builtin.reboot:
+    msg: "Maestro: rebooting to apply FeatureFlags override"
+    reboot_timeout: 600

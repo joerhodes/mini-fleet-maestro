@@ -1,0 +1,47 @@
+# audiomxd spin loop on headless Macs at loginwindow (no console user).
+# audiomxd retries a Bluetooth audio-routing connection with no backoff,
+# pinning ~1 core and flooding the unified log. Disabling the
+# BluetoothFeatures/SmartRoutingMacOS flag makes audiomxd exit at launch;
+# it then relaunches every ~5s and exits again (harmless).
+# The flag check only exists on 26.6.1+, so older builds can't be fixed this way.
+# Ref: https://github.com/je4yfc/macos-audiomxd-governor-bugfix
+
+- name: Verify macOS supports the audiomxd feature-flag fix
+  ansible.builtin.assert:
+    that: ansible_facts['distribution_version'] is version('26.6.1', '>=')
+    fail_msg: >-
+      {{ inventory_hostname }} is on macOS {{ ansible_facts['distribution_version'] }}.
+      Headless Minis below 26.6.1 hit the audiomxd spin loop, and the
+      feature-flag fix has no effect there. Update macOS via Screen Sharing,
+      then re-run this playbook.
+    quiet: true
+
+- name: Ensure FeatureFlags override directory exists
+  become: true
+  ansible.builtin.file:
+    path: /Library/Preferences/FeatureFlags/Domain
+    state: directory
+    owner: root
+    group: wheel
+    mode: "0755"
+
+- name: Disable SmartRoutingMacOS feature flag
+  become: true
+  ansible.builtin.copy:
+    dest: /Library/Preferences/FeatureFlags/Domain/BluetoothFeatures.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+    content: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>SmartRoutingMacOS</key>
+        <dict>
+          <key>Enabled</key>
+          <false/>
+        </dict>
+      </dict>
+      </plist>
+  notify: Reboot to apply feature flags
