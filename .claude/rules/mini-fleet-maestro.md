@@ -134,8 +134,6 @@ hardware. Verification against real Minis is done by Joe, never by an agent.
 - `server:list` - List all registered servers
 - `server:role-add {server} {roles*}` - Add one or more roles to a server
 - `server:role-remove {server} {roles*}` - Remove one or more roles from a server
-- `ansible:inventory {servers?*}` — print the inventory JSON for the named
-  servers, or all.
 - `ansible:run {playbook} {--server=*} {--all} {--check} {--diff}` — run a
   playbook through `AnsibleRunner`, streaming output live. Requires exactly one
   of `--server` / `--all` (never the whole fleet by default). Prints an outcome
