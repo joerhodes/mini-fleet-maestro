@@ -2,3 +2,6 @@
 [scripts]
 setup_file = ".bloom/setup.sh"
 archive_file = ".bloom/archive.sh"
+
+[browser]
+url = "http://mini-fleet-maestro.test:$BLOOM_PORT/"
