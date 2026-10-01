@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Role;
 use App\Services\AnsibleRoleRegistry;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -19,26 +18,17 @@ class RoleListCommand extends Command
 
     public function handle(): int
     {
-        $discovered = $this->roles->discovered()->sort()->values();
+        $listing = $this->roles->listing();
 
-        if ($discovered->isEmpty()) {
+        if ($listing->isEmpty()) {
             $this->info('No Ansible roles discovered.');
 
             return self::SUCCESS;
         }
 
-        $unregistered = $this->roles->unregistered();
-        $registered = Role::whereIn('role', $discovered)->get()->keyBy('role');
-
-        $rows = $discovered->map(function (string $role) use ($unregistered, $registered) {
-            if ($unregistered->contains($role)) {
-                return [$role, 'No', '—', '—'];
-            }
-
-            $model = $registered->get($role);
-
-            return [$role, 'Yes', $model->label, $model->always_apply ? 'Yes' : 'No'];
-        });
+        $rows = $listing->map(fn (array $role) => $role['registered']
+            ? [$role['role'], 'Yes', $role['label'], $role['alwaysApply'] ? 'Yes' : 'No']
+            : [$role['role'], 'No', '—', '—']);
 
         $this->table(['Role', 'Registered', 'Label', 'Always Apply'], $rows);
 

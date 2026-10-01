@@ -30,4 +30,25 @@ class AnsibleRoleRegistry
     {
         return Role::where('always_apply', false)->pluck('role');
     }
+
+    /**
+     * Every discovered role, sorted by name, with its registration details.
+     *
+     * @return Collection<int, array{role: string, registered: bool, label: ?string, alwaysApply: ?bool}>
+     */
+    public function listing(): Collection
+    {
+        $registered = Role::whereIn('role', $this->discovered())->get()->keyBy('role');
+
+        return $this->discovered()->sort()->values()->map(function (string $role) use ($registered) {
+            $model = $registered->get($role);
+
+            return [
+                'role' => $role,
+                'registered' => $model !== null,
+                'label' => $model?->label,
+                'alwaysApply' => $model?->always_apply,
+            ];
+        });
+    }
 }
