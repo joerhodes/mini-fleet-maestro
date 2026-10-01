@@ -5,17 +5,19 @@ namespace App\Enums;
 enum ServerStatus: string
 {
     case Pending = 'pending';
-    case Testing = 'testing';
-    case Connected = 'connected';
-    case Failed = 'failed';
+    case Unreachable = 'unreachable';
+    case PingOk = 'ping_ok';
+    case SshOk = 'ssh_ok';
+    case Ready = 'ready';
 
     public function label(): string
     {
         return match ($this) {
             self::Pending => 'Pending',
-            self::Testing => 'Testing',
-            self::Connected => 'Connected',
-            self::Failed => 'Failed',
+            self::Unreachable => 'Unreachable',
+            self::PingOk => 'Ping OK',
+            self::SshOk => 'SSH OK',
+            self::Ready => 'Ready',
         };
     }
 
@@ -23,9 +25,10 @@ enum ServerStatus: string
     {
         return match ($this) {
             self::Pending => 'gray',
-            self::Testing => 'blue',
-            self::Connected => 'green',
-            self::Failed => 'red',
+            self::Unreachable => 'red',
+            self::PingOk => 'yellow',
+            self::SshOk => 'yellow',
+            self::Ready => 'green',
         };
     }
 }
