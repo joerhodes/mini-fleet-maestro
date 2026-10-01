@@ -22,7 +22,7 @@
                     <div>
                         <flux:heading size="xl">Server List</flux:heading>
                     </div>
-                    <flux:button icon="plus">Add Server</flux:button>
+                    <flux:button icon="plus" :href="route('servers.create')" wire:navigate>Add Server</flux:button>
                 </div>
                 <flux:table bleed>
                     <flux:table.columns>
