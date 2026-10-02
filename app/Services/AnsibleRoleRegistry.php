@@ -10,7 +10,7 @@ class AnsibleRoleRegistry
 {
     public function discovered(): Collection
     {
-        return collect(File::directories(config('ansible.paths.roles')))
+        return collect(File::directories(config('maestro.ansible.paths.roles')))
             ->filter(fn (string $dir) => File::exists($dir.'/tasks/main.yml'))
             ->map(fn (string $dir) => basename($dir))
             ->values();

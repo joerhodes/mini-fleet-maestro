@@ -4,7 +4,7 @@ use App\Models\Role;
 use App\Models\User;
 
 beforeEach(function () {
-    config(['ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
+    config(['maestro.ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
 });
 
 test('guests are redirected to the login page', function () {
@@ -23,7 +23,7 @@ test('authenticated users see discovered roles with their registration status', 
 });
 
 test('the roles page reports when no roles are discovered', function () {
-    config(['ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles-empty')]);
+    config(['maestro.ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles-empty')]);
 
     $this->actingAs(User::factory()->create())
         ->get(route('roles.index'))

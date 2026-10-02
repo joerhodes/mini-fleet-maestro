@@ -4,7 +4,7 @@ use App\Models\Role;
 use App\Services\AnsibleRoleRegistry;
 
 beforeEach(function () {
-    config(['ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
+    config(['maestro.ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
 });
 
 test('discovered returns only role folders containing a tasks/main.yml file', function () {

@@ -5,7 +5,7 @@ use App\Models\User;
 use Livewire\Livewire;
 
 beforeEach(function () {
-    config(['ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
+    config(['maestro.ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
     $this->actingAs(User::factory()->create());
 });
 

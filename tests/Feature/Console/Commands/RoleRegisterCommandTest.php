@@ -3,7 +3,7 @@
 use App\Models\Role;
 
 beforeEach(function () {
-    config(['ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
+    config(['maestro.ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
 });
 
 test('registers a discovered role', function () {

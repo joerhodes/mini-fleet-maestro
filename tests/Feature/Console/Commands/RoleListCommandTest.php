@@ -3,7 +3,7 @@
 use App\Models\Role;
 
 beforeEach(function () {
-    config(['ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
+    config(['maestro.ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles')]);
 });
 
 test('lists discovered roles as unregistered when none are registered', function () {
@@ -33,7 +33,7 @@ test('lists the label and always_apply value for a registered role', function ()
 });
 
 test('reports when no roles are discovered', function () {
-    config(['ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles-empty')]);
+    config(['maestro.ansible.paths.roles' => base_path('tests/Fixtures/ansible-roles-empty')]);
 
     $this->artisan('role:list')
         ->expectsOutputToContain('No Ansible roles discovered.')

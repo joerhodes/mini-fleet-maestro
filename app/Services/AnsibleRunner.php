@@ -52,7 +52,7 @@ class AnsibleRunner
         $inventoryPath = $this->newInventoryPath();
 
         $env = ['ANSIBLE_FORCE_COLOR' => '0'];
-        $timeout = config('ansible.timeout');
+        $timeout = config('maestro.ansible.timeout');
 
         if ($connectionTimeout !== null) {
             $env['ANSIBLE_TIMEOUT'] = (string) $connectionTimeout;
@@ -62,7 +62,7 @@ class AnsibleRunner
         try {
             $this->writeInventory($inventoryPath, $inventory);
 
-            $result = Process::path(config('ansible.paths.root'))
+            $result = Process::path(config('maestro.ansible.paths.root'))
                 ->timeout($timeout)
                 ->env($env)
                 ->run(
@@ -92,7 +92,7 @@ class AnsibleRunner
         bool $diff,
     ): array {
         $command = [
-            config('ansible.binary'),
+            config('maestro.ansible.binary'),
             '-i', $inventoryPath,
             $playbookPath,
             '--limit', $servers->pluck('name')->implode(','),
@@ -115,7 +115,7 @@ class AnsibleRunner
             throw new InvalidArgumentException("Invalid playbook name [{$playbook}].");
         }
 
-        $path = config('ansible.paths.playbooks')."/{$playbook}.yml";
+        $path = config('maestro.ansible.paths.playbooks')."/{$playbook}.yml";
 
         if (! File::isFile($path)) {
             throw new InvalidArgumentException("The playbook [{$playbook}] was not found.");
@@ -126,7 +126,7 @@ class AnsibleRunner
 
     protected function newInventoryPath(): string
     {
-        $directory = config('ansible.paths.inventory');
+        $directory = config('maestro.ansible.paths.inventory');
 
         File::ensureDirectoryExists($directory, 0700);
 

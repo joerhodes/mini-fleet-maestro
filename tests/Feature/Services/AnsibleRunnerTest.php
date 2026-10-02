@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Process;
 beforeEach(function () {
     $this->inventoryDirectory = sys_get_temp_dir().'/ansible-runner-test-'.uniqid();
     config([
-        'ansible.paths.inventory' => $this->inventoryDirectory,
-        'ansible.binary' => 'ansible-playbook',
-        'ansible.timeout' => 1234,
+        'maestro.ansible.paths.inventory' => $this->inventoryDirectory,
+        'maestro.ansible.binary' => 'ansible-playbook',
+        'maestro.ansible.timeout' => 1234,
     ]);
 });
 
@@ -22,8 +22,8 @@ afterEach(function () {
 
 function inventoryFiles(): array
 {
-    return File::isDirectory(config('ansible.paths.inventory'))
-        ? File::files(config('ansible.paths.inventory'))
+    return File::isDirectory(config('maestro.ansible.paths.inventory'))
+        ? File::files(config('maestro.ansible.paths.inventory'))
         : [];
 }
 
@@ -150,7 +150,7 @@ test('returns the exit code and output of the process', function () {
 });
 
 test('streams output chunks to the callback as the process runs', function () {
-    config(['ansible.binary' => '/bin/echo']);
+    config(['maestro.ansible.binary' => '/bin/echo']);
     $chunks = [];
 
     $result = app(AnsibleRunner::class)->run(

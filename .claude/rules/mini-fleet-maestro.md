@@ -55,6 +55,8 @@ provisioning tool for a fleet of Mac Minis. Portfolio piece + real infrastructur
 - Roles that apply to every server regardless of assignment (currently just
   `common`) are marked via `roles.always_apply`, not a config array.
   `AnsibleRoleRegistry::assignable()` excludes them from what a user can pick.
+- Application config lives under config/maestro/, one file per concern, 
+  and stock config files are never edited.
 
 ## Current schema (servers domain)
 

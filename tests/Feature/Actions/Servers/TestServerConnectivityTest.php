@@ -15,7 +15,7 @@ function fakePingAndSsh(int $pingExitCode, int $sshExitCode): void
 {
     Process::fake(function (PendingProcess $process) use ($pingExitCode, $sshExitCode) {
         return match ($process->command[0]) {
-            'ping' => Process::result(exitCode: $pingExitCode, errorOutput: 'ping output'),
+            config('maestro.connectivity.ping_binary') => Process::result(exitCode: $pingExitCode, errorOutput: 'ping output'),
             'ssh' => Process::result(exitCode: $sshExitCode, errorOutput: 'ssh output'),
         };
     });
@@ -27,7 +27,7 @@ function mockAnsiblePing(int $exitCode): void
         ->shouldReceive('run')
         ->once()
         ->withArgs(fn ($playbook, $servers, $check, $diff, $onOutput, $connectionTimeout) => $playbook === 'ping'
-            && $connectionTimeout === config('connectivity.ansible_timeout'))
+            && $connectionTimeout === config('maestro.connectivity.ansible_timeout'))
         ->andReturn(new AnsibleRunResult(exitCode: $exitCode, output: 'ansible output', errorOutput: ''));
 }
 
@@ -40,7 +40,7 @@ test('stops at unreachable when the ping fails, without attempting ssh or ansibl
 
     expect($result->status)->toBe(ServerStatus::Unreachable);
     expect($result->last_check_output)->toContain('ping output');
-    Process::assertRan(fn (PendingProcess $process) => $process->command[0] === 'ping');
+    Process::assertRan(fn (PendingProcess $process) => $process->command[0] === config('maestro.connectivity.ping_binary'));
     Process::assertNotRan(fn (PendingProcess $process) => $process->command[0] === 'ssh');
 });
 
@@ -97,9 +97,9 @@ test('uses a short, OS-appropriate timeout flag for ping', function () {
     app(TestServerConnectivity::class)($server);
 
     Process::assertRan(function (PendingProcess $process) use ($expectedFlag) {
-        return $process->command[0] === 'ping'
+        return $process->command[0] === config('maestro.connectivity.ping_binary')
             && in_array($expectedFlag, $process->command, true)
-            && in_array((string) config('connectivity.ping_timeout'), $process->command, true);
+            && in_array((string) config('maestro.connectivity.ping_timeout'), $process->command, true);
     });
 });
 
@@ -113,7 +113,7 @@ test('uses BatchMode and a ConnectTimeout for ssh', function () {
     Process::assertRan(function (PendingProcess $process) {
         return $process->command[0] === 'ssh'
             && in_array('BatchMode=yes', $process->command, true)
-            && in_array('ConnectTimeout='.config('connectivity.ssh_timeout'), $process->command, true)
+            && in_array('ConnectTimeout='.config('maestro.connectivity.ssh_timeout'), $process->command, true)
             && in_array('minion@mini01.invalid', $process->command, true)
             && in_array('2222', $process->command, true);
     });
@@ -121,7 +121,7 @@ test('uses BatchMode and a ConnectTimeout for ssh', function () {
 
 test('treats a ping timeout as unreachable', function () {
     Process::fake(function (PendingProcess $process) {
-        if ($process->command[0] === 'ping') {
+        if ($process->command[0] === config('maestro.connectivity.ping_binary')) {
             throw new ProcessTimedOutException(
                 new SymfonyProcessTimedOutException(new SymfonyProcess(['true']), SymfonyProcessTimedOutException::TYPE_GENERAL),
                 Process::result(),

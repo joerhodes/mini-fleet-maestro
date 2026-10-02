@@ -38,12 +38,12 @@ class TestServerConnectivity
      */
     protected function ping(Server $server): ?array
     {
-        $timeout = config('connectivity.ping_timeout');
+        $timeout = config('maestro.connectivity.ping_timeout');
         $flag = PHP_OS_FAMILY === 'Darwin' ? '-t' : '-W';
 
         try {
             $result = Process::timeout($timeout + 2)
-                ->run(['ping', '-c', '1', $flag, (string) $timeout, $server->hostname]);
+                ->run([config('maestro.connectivity.ping_binary'), '-c', '1', $flag, (string) $timeout, $server->hostname]);
         } catch (ProcessTimedOutException) {
             return [ServerStatus::Unreachable, "Ping timed out after {$timeout}s."];
         }
@@ -60,7 +60,7 @@ class TestServerConnectivity
      */
     protected function ssh(Server $server): ?array
     {
-        $timeout = config('connectivity.ssh_timeout');
+        $timeout = config('maestro.connectivity.ssh_timeout');
 
         try {
             $result = Process::timeout($timeout + 2)->run([
@@ -91,7 +91,7 @@ class TestServerConnectivity
             $result = $this->ansibleRunner->run(
                 'ping',
                 collect([$server]),
-                connectionTimeout: config('connectivity.ansible_timeout'),
+                connectionTimeout: config('maestro.connectivity.ansible_timeout'),
             );
         } catch (ProcessTimedOutException $exception) {
             return [ServerStatus::SshOk, $exception->getMessage()];
