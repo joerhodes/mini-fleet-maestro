@@ -60,13 +60,20 @@ class TestServerConnectivity
      */
     protected function ssh(Server $server): ?array
     {
-        $timeout = config('maestro.connectivity.ssh_timeout');
+        $timeout = config('maestro.connectivity.ssh.timeout');
+        $identityFile = config('maestro.connectivity.ssh.identity_file');
+        $knownHosts = config('maestro.connectivity.ssh.known_hosts');
+
 
         try {
             $result = Process::timeout($timeout + 2)->run([
                 'ssh',
+                '-i', $identityFile,
+                '-o', 'IdentitiesOnly=yes',
                 '-o', 'BatchMode=yes',
                 '-o', "ConnectTimeout={$timeout}",
+                '-o', "UserKnownHostsFile={$knownHosts}",
+                '-o', 'StrictHostKeyChecking=accept-new',
                 '-p', (string) $server->ssh_port,
                 "{$server->ssh_user}@{$server->hostname}",
                 'exit',

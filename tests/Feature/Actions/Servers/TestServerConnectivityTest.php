@@ -113,7 +113,7 @@ test('uses BatchMode and a ConnectTimeout for ssh', function () {
     Process::assertRan(function (PendingProcess $process) {
         return $process->command[0] === 'ssh'
             && in_array('BatchMode=yes', $process->command, true)
-            && in_array('ConnectTimeout='.config('maestro.connectivity.ssh_timeout'), $process->command, true)
+            && in_array('ConnectTimeout='.config('maestro.connectivity.ssh.timeout'), $process->command, true)
             && in_array('minion@mini01.invalid', $process->command, true)
             && in_array('2222', $process->command, true);
     });
