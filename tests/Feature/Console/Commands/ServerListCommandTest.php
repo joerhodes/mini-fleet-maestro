@@ -10,14 +10,14 @@ test('lists registered servers with a placeholder when no roles apply', function
         'hostname' => 'msv05.local',
         'ssh_user' => 'admin',
         'ssh_port' => 22,
-        'status' => 'connected',
+        'status' => 'ready',
     ]);
 
     $this->artisan('server:list')
         ->expectsTable(
             ['ID', 'Name', 'Hostname', 'SSH User', 'SSH Port', 'Status', 'Roles'],
             [
-                [1, 'msv05', 'msv05.local', 'admin', 22, 'Connected', '—'],
+                [1, 'msv05', 'msv05.local', 'admin', 22, 'Ready', '—'],
             ],
         )
         ->assertExitCode(0);

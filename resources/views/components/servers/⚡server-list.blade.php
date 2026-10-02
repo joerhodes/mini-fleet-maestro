@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\Servers\DeleteServer;
+use App\Actions\Servers\TestServerConnectivity;
+use App\Enums\ServerStatus;
 use App\Models\Server;
 use Flux\Flux;
 use Illuminate\Support\Collection;
@@ -26,6 +28,38 @@ new class extends Component
     public function deletingServer(): ?Server
     {
         return $this->deletingId === null ? null : Server::withCount(['roles', 'secrets'])->find($this->deletingId);
+    }
+
+    public function test(int $serverId): void
+    {
+        $server = app(TestServerConnectivity::class)(
+            Server::with(['roles.roleConfigs', 'secrets'])->findOrFail($serverId),
+        );
+
+        unset($this->servers);
+
+        Flux::toast(
+            "[{$server->name}]: {$server->status->label()}",
+            variant: $server->status === ServerStatus::Ready ? 'success' : 'warning',
+        );
+    }
+
+    public function testAll(): void
+    {
+        $servers = Server::with(['roles.roleConfigs', 'secrets'])->orderBy('name')->get();
+        $testServerConnectivity = app(TestServerConnectivity::class);
+
+        $readyCount = $servers
+            ->map(fn (Server $server) => $testServerConnectivity($server))
+            ->filter(fn (Server $server) => $server->status === ServerStatus::Ready)
+            ->count();
+
+        unset($this->servers);
+
+        Flux::toast(
+            "{$readyCount} of {$servers->count()} servers ready.",
+            variant: $readyCount === $servers->count() ? 'success' : 'warning',
+        );
     }
 
     public function confirmDelete(int $serverId): void
@@ -59,7 +93,10 @@ new class extends Component
             <div>
                 <flux:heading size="xl">Server List</flux:heading>
             </div>
-            <flux:button icon="plus" :href="route('servers.create')" wire:navigate>Add Server</flux:button>
+            <div class="flex gap-2">
+                <flux:button icon="signal" wire:click="testAll">Test All</flux:button>
+                <flux:button icon="plus" :href="route('servers.create')" wire:navigate>Add Server</flux:button>
+            </div>
         </div>
         @if($this->servers->isEmpty())
             <flux:text>No servers have been added yet.</flux:text>
@@ -81,6 +118,7 @@ new class extends Component
                         </flux:table.cell>
                         <flux:table.cell align="end">
                             <div class="flex justify-end gap-2">
+                                <flux:button size="sm" wire:click="test({{ $server->id }})">Test</flux:button>
                                 <flux:button size="sm" :href="route('servers.edit', $server)" wire:navigate>Edit</flux:button>
                                 <flux:button size="sm" variant="danger" wire:click="confirmDelete({{ $server->id }})">Delete</flux:button>
                             </div>

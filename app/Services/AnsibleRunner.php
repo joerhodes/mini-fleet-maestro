@@ -24,6 +24,9 @@ class AnsibleRunner
      * @param  string  $playbook  Playbook name without extension, e.g. "bootstrap"
      * @param  Collection<int, Server>  $servers
      * @param  (callable(string, string): void)|null  $onOutput  Receives the stream type and each output chunk
+     * @param  int|null  $connectionTimeout  When given, overrides Ansible's own connection timeout (via
+     *                                       `ANSIBLE_TIMEOUT`) and caps the Laravel-side process timeout to match,
+     *                                       instead of waiting up to the full `ansible.timeout` for a hung host.
      *
      * @throws InvalidArgumentException When the playbook name is invalid or no servers are given
      */
@@ -33,6 +36,7 @@ class AnsibleRunner
         bool $check = false,
         bool $diff = false,
         ?callable $onOutput = null,
+        ?int $connectionTimeout = null,
     ): AnsibleRunResult {
         $playbookPath = $this->playbookPath($playbook);
 
@@ -47,12 +51,20 @@ class AnsibleRunner
 
         $inventoryPath = $this->newInventoryPath();
 
+        $env = ['ANSIBLE_FORCE_COLOR' => '0'];
+        $timeout = config('ansible.timeout');
+
+        if ($connectionTimeout !== null) {
+            $env['ANSIBLE_TIMEOUT'] = (string) $connectionTimeout;
+            $timeout = $connectionTimeout + 5;
+        }
+
         try {
             $this->writeInventory($inventoryPath, $inventory);
 
             $result = Process::path(config('ansible.paths.root'))
-                ->timeout(config('ansible.timeout'))
-                ->env(['ANSIBLE_FORCE_COLOR' => '0'])
+                ->timeout($timeout)
+                ->env($env)
                 ->run(
                     $this->command($inventoryPath, $playbookPath, $servers, $check, $diff),
                     $onOutput,

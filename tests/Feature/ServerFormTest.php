@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Servers\TestServerConnectivity;
 use App\Enums\ServerStatus;
 use App\Models\Server;
 use App\Models\User;
@@ -7,6 +8,8 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     $this->actingAs(User::factory()->create());
+    $this->connectivityTest = $this->mock(TestServerConnectivity::class);
+    $this->connectivityTest->shouldReceive('__invoke')->andReturnArg(0)->byDefault();
 });
 
 test('a new server starts with default values', function () {
@@ -78,7 +81,7 @@ test('saving an existing server updates it without creating another', function (
 
 test('changing a connection field resets the status', function () {
     $server = Server::factory()->create([
-        'status' => ServerStatus::Connected,
+        'status' => ServerStatus::Ready,
         'last_checked_at' => now(),
         'last_check_output' => 'ok',
     ]);
@@ -94,9 +97,44 @@ test('changing a connection field resets the status', function () {
         ->and($server->last_check_output)->toBeNull();
 });
 
+test('saving a server that is left pending runs the connectivity test', function () {
+    $server = Server::factory()->create(['status' => ServerStatus::Ready]);
+    $this->connectivityTest->shouldReceive('__invoke')->once()->andReturnUsing(function (Server $tested) {
+        $tested->update(['status' => ServerStatus::SshOk]);
+
+        return $tested;
+    });
+
+    Livewire::test('servers.server-form', ['server' => $server])
+        ->set('form.sshPort', '2222')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($server->fresh()->status)->toBe(ServerStatus::SshOk);
+});
+
+test('saving a new server runs the connectivity test', function () {
+    $this->connectivityTest->shouldReceive('__invoke')->once()->andReturnArg(0);
+
+    Livewire::test('servers.server-form')
+        ->set('form.name', 'mini02')
+        ->set('form.hostname', 'mini02.invalid')
+        ->set('form.sshUser', 'admin')
+        ->call('save');
+});
+
+test('saving without a status reset does not run the connectivity test', function () {
+    $server = Server::factory()->create(['status' => ServerStatus::Ready]);
+    $this->connectivityTest->shouldNotReceive('__invoke');
+
+    Livewire::test('servers.server-form', ['server' => $server])
+        ->set('form.notes', 'note')
+        ->call('save');
+});
+
 test('changing only the name or notes keeps the status', function () {
     $server = Server::factory()->create([
-        'status' => ServerStatus::Connected,
+        'status' => ServerStatus::Ready,
         'last_checked_at' => now(),
         'last_check_output' => 'ok',
     ]);
@@ -108,7 +146,7 @@ test('changing only the name or notes keeps the status', function () {
 
     $server->refresh();
 
-    expect($server->status)->toBe(ServerStatus::Connected)
+    expect($server->status)->toBe(ServerStatus::Ready)
         ->and($server->last_checked_at)->not->toBeNull()
         ->and($server->last_check_output)->toBe('ok');
 });

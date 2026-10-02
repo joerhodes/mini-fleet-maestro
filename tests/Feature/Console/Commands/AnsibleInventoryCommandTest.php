@@ -64,7 +64,7 @@ test('only emits groups for roles assigned to the selected servers', function ()
 });
 
 test('includes servers regardless of their status', function () {
-    Server::factory()->create(['name' => 'msv05', 'status' => ServerStatus::Failed]);
+    Server::factory()->create(['name' => 'msv05', 'status' => ServerStatus::Unreachable]);
 
     $exitCode = Artisan::call('ansible:inventory');
 

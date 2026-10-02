@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Servers\TestServerConnectivity;
+use App\Enums\ServerStatus;
 use App\Livewire\Forms\ServerForm;
 use App\Models\Server;
 use Flux\Flux;
@@ -21,6 +23,15 @@ new class extends Component
         $server = $this->form->save();
 
         Flux::toast('Server saved.', variant: 'success');
+
+        if ($server->status === ServerStatus::Pending) {
+            $server = app(TestServerConnectivity::class)($server->load(['roles.roleConfigs', 'secrets']));
+
+            Flux::toast(
+                "Connectivity: {$server->status->label()}",
+                variant: $server->status === ServerStatus::Ready ? 'success' : 'warning',
+            );
+        }
 
         if ($isNew) {
             $this->redirectRoute('servers.edit', $server, navigate: true);
