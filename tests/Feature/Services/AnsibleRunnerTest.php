@@ -41,7 +41,24 @@ test('runs ansible-playbook with the expected command, working directory, timeou
             && array_slice($process->command, 4) === ['--limit', 'msv05']
             && $process->path === resource_path('ansible')
             && $process->timeout === 1234
-            && $process->environment === ['ANSIBLE_FORCE_COLOR' => '0'];
+            && $process->environment['ANSIBLE_FORCE_COLOR'] === '0';
+    });
+});
+
+test('points ansible ssh at the application key and known_hosts', function () {
+    Process::fake();
+    config([
+        'maestro.connectivity.ssh.identity_file' => '/keys/maestro',
+        'maestro.connectivity.ssh.known_hosts' => '/keys/known_hosts',
+    ]);
+    $servers = collect([Server::factory()->create(['name' => 'msv05'])]);
+
+    app(AnsibleRunner::class)->run('bootstrap', $servers);
+
+    Process::assertRan(function (PendingProcess $process) {
+        return $process->environment['ANSIBLE_PRIVATE_KEY_FILE'] === '/keys/maestro'
+            && str_contains($process->environment['ANSIBLE_SSH_COMMON_ARGS'], "'IdentitiesOnly=yes'")
+            && str_contains($process->environment['ANSIBLE_SSH_COMMON_ARGS'], "'UserKnownHostsFile=/keys/known_hosts'");
     });
 });
 
@@ -79,7 +96,7 @@ test('sets ANSIBLE_TIMEOUT and caps the process timeout when a connection timeou
     app(AnsibleRunner::class)->run('bootstrap', $servers, connectionTimeout: 2);
 
     Process::assertRan(function (PendingProcess $process) {
-        return $process->environment === ['ANSIBLE_FORCE_COLOR' => '0', 'ANSIBLE_TIMEOUT' => '2']
+        return $process->environment['ANSIBLE_TIMEOUT'] === '2'
             && $process->timeout === 7;
     });
 });

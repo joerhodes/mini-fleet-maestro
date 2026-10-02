@@ -51,7 +51,7 @@ class AnsibleRunner
 
         $inventoryPath = $this->newInventoryPath();
 
-        $env = ['ANSIBLE_FORCE_COLOR' => '0'];
+        $env = ['ANSIBLE_FORCE_COLOR' => '0', ...$this->sshEnvironment()];
         $timeout = config('maestro.ansible.timeout');
 
         if ($connectionTimeout !== null) {
@@ -107,6 +107,31 @@ class AnsibleRunner
         }
 
         return $command;
+    }
+
+    /**
+     * Point Ansible's SSH at the application's own key and known_hosts, rather than the invoking user's ssh config/agent.
+     *
+     * @return array<string, string>
+     */
+    protected function sshEnvironment(): array
+    {
+        $identityFile = config('maestro.connectivity.ssh.identity_file');
+        $knownHosts = config('maestro.connectivity.ssh.known_hosts');
+
+        $args = ['-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=accept-new'];
+
+        if ($knownHosts) {
+            $args = [...$args, '-o', 'UserKnownHostsFile='.$knownHosts];
+        }
+
+        $env = ['ANSIBLE_SSH_COMMON_ARGS' => implode(' ', array_map('escapeshellarg', $args))];
+
+        if ($identityFile) {
+            $env['ANSIBLE_PRIVATE_KEY_FILE'] = $identityFile;
+        }
+
+        return $env;
     }
 
     protected function playbookPath(string $playbook): string
