@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\Servers\TestServerConnectivity;
+use App\Enums\ServerStatus;
 use App\Models\Role;
 use App\Models\Server;
 use App\Models\ServerConfig;
@@ -14,7 +16,7 @@ beforeEach(function () {
 test('each server has a Delete button', function () {
     Server::factory()->count(2)->create();
 
-    Livewire::test('servers.server-list')->assertSeeInOrder(['Edit', 'Delete', 'Edit', 'Delete']);
+    Livewire::test('servers.server-list')->assertSeeInOrder(['Test', 'Edit', 'Delete', 'Test', 'Edit', 'Delete']);
 });
 
 test('the confirm modal names the server and documents what will be removed', function () {
@@ -79,4 +81,39 @@ test('the delete target cannot be tampered with', function () {
 
 test('an unknown server cannot be selected for deletion', function () {
     Livewire::test('servers.server-list')->call('confirmDelete', 999);
+})->throws(ModelNotFoundException::class);
+
+test('the Test All button is shown', function () {
+    Server::factory()->create();
+
+    Livewire::test('servers.server-list')->assertSee('Test All');
+});
+
+test('testing one server runs the connectivity test for only that server', function () {
+    $server = Server::factory()->create(['name' => 'mini01']);
+    Server::factory()->create(['name' => 'mini02']);
+    $this->mock(TestServerConnectivity::class)
+        ->shouldReceive('__invoke')
+        ->once()
+        ->withArgs(fn (Server $tested) => $tested->is($server))
+        ->andReturnUsing(function (Server $tested) {
+            $tested->update(['status' => ServerStatus::Ready]);
+
+            return $tested;
+        });
+
+    Livewire::test('servers.server-list')
+        ->call('test', $server->id)
+        ->assertSee('Ready');
+});
+
+test('testing all runs the connectivity test for every server', function () {
+    Server::factory()->count(3)->create();
+    $this->mock(TestServerConnectivity::class)->shouldReceive('__invoke')->times(3)->andReturnArg(0);
+
+    Livewire::test('servers.server-list')->call('testAll');
+});
+
+test('an unknown server cannot be tested', function () {
+    Livewire::test('servers.server-list')->call('test', 999);
 })->throws(ModelNotFoundException::class);

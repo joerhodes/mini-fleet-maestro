@@ -72,6 +72,27 @@ test('adds --check and --diff only when requested', function (bool $check, bool 
     'both' => [true, true, ['--check', '--diff']],
 ]);
 
+test('sets ANSIBLE_TIMEOUT and caps the process timeout when a connection timeout is given', function () {
+    Process::fake();
+    $servers = collect([Server::factory()->create(['name' => 'msv05'])]);
+
+    app(AnsibleRunner::class)->run('bootstrap', $servers, connectionTimeout: 2);
+
+    Process::assertRan(function (PendingProcess $process) {
+        return $process->environment === ['ANSIBLE_FORCE_COLOR' => '0', 'ANSIBLE_TIMEOUT' => '2']
+            && $process->timeout === 7;
+    });
+});
+
+test('uses the default ansible.timeout when no connection timeout is given', function () {
+    Process::fake();
+    $servers = collect([Server::factory()->create(['name' => 'msv05'])]);
+
+    app(AnsibleRunner::class)->run('bootstrap', $servers);
+
+    Process::assertRan(fn (PendingProcess $process) => $process->timeout === 1234);
+});
+
 test('writes the inventory with 0600 permissions while the process runs', function () {
     $server = Server::factory()->create(['name' => 'msv05']);
     ServerConfig::factory()->create(['server_id' => $server->id, 'key' => 'rig_id', 'value' => 'secret-rig']);
