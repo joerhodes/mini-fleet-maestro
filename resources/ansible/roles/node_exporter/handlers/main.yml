@@ -1,0 +1,11 @@
+---
+- name: restart node_exporter
+  become: true
+  ansible.builtin.command: "launchctl bootout system/com.local.node-exporter"
+  failed_when: false
+  changed_when: false
+
+- name: restart node_exporter
+  become: true
+  ansible.builtin.command: "launchctl bootstrap system /Library/LaunchDaemons/com.local.node-exporter.plist"
+  listen: restart node_exporter

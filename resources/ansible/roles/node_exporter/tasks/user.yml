@@ -1,0 +1,6 @@
+---
+- name: Set up node_exporter service account
+  ansible.builtin.include_tasks: ../../common/tasks/service-account.yml
+  vars:
+    service_account_name: _node_exporter
+    service_account_comment: "MiniFleet Maestro — node_exporter service account"

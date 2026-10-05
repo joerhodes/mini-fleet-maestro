@@ -1,0 +1,15 @@
+---
+- name: Verify node_exporter variables are present
+  ansible.builtin.include_tasks: preflight.yml
+
+- name: Set up node_exporter service account
+  ansible.builtin.include_tasks: user.yml
+
+- name: Install node_exporter
+  ansible.builtin.include_tasks: install.yml
+
+- name: Deploy node_exporter LaunchDaemon
+  ansible.builtin.include_tasks: service.yml
+
+- name: Verify node_exporter is serving metrics
+  ansible.builtin.include_tasks: verify.yml

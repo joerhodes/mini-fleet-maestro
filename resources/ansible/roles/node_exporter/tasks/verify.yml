@@ -1,0 +1,21 @@
+---
+- name: Apply pending node_exporter restarts before verifying
+  ansible.builtin.meta: flush_handlers
+
+- name: Verify node_exporter serves metrics
+  ansible.builtin.uri:
+    url: http://localhost:9100/metrics
+    return_content: true
+  register: node_exporter_metrics
+  retries: 10
+  delay: 2
+  until: node_exporter_metrics.status == 200
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Assert metrics body looks like node_exporter output
+  ansible.builtin.assert:
+    that:
+      - "'node_' in node_exporter_metrics.content"
+    fail_msg: "http://localhost:9100/metrics responded but contained no node_ metrics"
+  when: not ansible_check_mode

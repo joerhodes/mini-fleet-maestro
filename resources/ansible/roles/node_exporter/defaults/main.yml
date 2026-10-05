@@ -1,0 +1,6 @@
+# roles/node_exporter/defaults/main.yml
+# node_exporter_version and node_exporter_sha256 come from role_config (no defaults).
+node_exporter_listen_address: ":9100"
+node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.darwin-arm64.tar.gz"
+node_exporter_release_dir: "node_exporter-{{ node_exporter_version }}.darwin-arm64"
+node_exporter_install_dir: "/Users/_node_exporter/node_exporter"
