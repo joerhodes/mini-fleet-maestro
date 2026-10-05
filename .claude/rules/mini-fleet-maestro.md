@@ -92,7 +92,25 @@ resources/ansible/
         main.yml
       templates/
         pmset-enforcer.plist.j2
+    node_exporter/
+      defaults/main.yml   # listen address, install dir, derived download URL
+      tasks/
+        main.yml          # index: preflight, user, install, service, verify
+        preflight.yml     # asserts role_config vars are set
+        user.yml          # _node_exporter service account
+        install.yml       # get_url + sha256, tar -xzf (same as mining), copy
+        service.yml       # LaunchDaemon deploy
+        verify.yml        # flush handlers, uri check of :9100/metrics
+      handlers/main.yml
+      templates/com.local.node-exporter.plist.j2
 ```
+
+`node_exporter` `role_config` keys (used verbatim as Ansible var names, no
+defaults, preflight fails if missing): `node_exporter_version` (no leading
+`v`), `node_exporter_sha256` (darwin-arm64 tarball checksum). Its LaunchDaemon
+deliberately does **not** set `ProcessType: Interactive` — that is
+xmrig-specific (keeps it off the efficiency cores for hashrate); a metrics
+exporter should run at default priority.
 
 Config: `config/ansible.php` — `paths.root` / `paths.roles` / `paths.playbooks` /
 `paths.inventory` (nested under `paths`), plus `binary` (`ANSIBLE_PLAYBOOK_BIN`)

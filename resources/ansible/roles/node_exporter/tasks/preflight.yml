@@ -1,0 +1,12 @@
+---
+- name: Verify node_exporter variables are present
+  ansible.builtin.assert:
+    that:
+      - node_exporter_version is defined
+      - node_exporter_version | length > 0
+      - node_exporter_sha256 is defined
+      - node_exporter_sha256 | length > 0
+    fail_msg: >-
+      Missing node_exporter config; set node_exporter_version and
+      node_exporter_sha256 via role_config
+      (php artisan role:config node_exporter node_exporter_version <value>).

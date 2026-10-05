@@ -1,0 +1,10 @@
+---
+- name: Deploy node_exporter LaunchDaemon
+  become: true
+  ansible.builtin.template:
+    src: com.local.node-exporter.plist.j2
+    dest: /Library/LaunchDaemons/com.local.node-exporter.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+  notify: restart node_exporter
