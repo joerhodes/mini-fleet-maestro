@@ -1,6 +1,6 @@
 <?php
 
-// config/connectivity.php
+// config/maestro/connectivity.php
 return [
     'ping_binary' => env('CONNECTIVITY_PING_BINARY', '/sbin/ping'),
 

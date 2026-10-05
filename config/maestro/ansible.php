@@ -1,6 +1,6 @@
 <?php
 
-// config/ansible.php
+// config/maestro/ansible.php
 return [
     'paths' => [
         'root' => resource_path('ansible'),
