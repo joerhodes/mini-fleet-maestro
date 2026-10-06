@@ -1,0 +1,31 @@
+---
+- name: Apply pending llm_node restarts before pulling models
+  ansible.builtin.meta: flush_handlers
+
+- name: List models already present
+  ansible.builtin.uri:
+    url: "{{ llm_node_api_url }}/api/tags"
+    return_content: true
+  register: llm_node_tags
+  retries: 10
+  delay: 2
+  until: llm_node_tags.status == 200
+  changed_when: false
+
+- name: Work out which configured models are missing
+  ansible.builtin.set_fact:
+    llm_node_missing_models: "{{ llm_node_model_list | difference(llm_node_tags.json.models | map(attribute='name') | list) }}"
+
+- name: Pull missing models
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "{{ llm_node_ollama_binary }}"
+      - pull
+      - "{{ item }}"
+  environment:
+    HOME: "{{ llm_node_data_dir }}"
+    OLLAMA_HOST: "{{ llm_node_api_url }}"
+  loop: "{{ llm_node_missing_models }}"
+  async: 7200
+  poll: 30

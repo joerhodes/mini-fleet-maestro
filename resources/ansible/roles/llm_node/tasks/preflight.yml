@@ -1,0 +1,31 @@
+---
+- name: Refuse to run alongside the mining role
+  ansible.builtin.assert:
+    that:
+      - "'mining' not in app_roles"
+    fail_msg: >-
+      llm_node cannot share a host with mining: LLM inference and xmrig compete
+      for the same CPU and memory. Remove the mining role from this server
+      (php artisan server:role-remove <server> mining) and stop the xmrig
+      LaunchDaemon on the Mini (sudo launchctl bootout system/com.local.xmrig).
+      Removing the role assignment alone does not uninstall or stop anything.
+
+- name: Verify llm_node variables are present
+  ansible.builtin.assert:
+    that:
+      - llm_node_ollama_version is defined
+      - llm_node_ollama_version | length > 0
+      - llm_node_ollama_sha256 is defined
+      - llm_node_ollama_sha256 | length > 0
+    fail_msg: >-
+      Missing llm_node config; set llm_node_ollama_version and
+      llm_node_ollama_sha256 via role_config
+      (php artisan role:config llm_node llm_node_ollama_version <value>).
+
+- name: Verify llm_node_listen_address is host:port
+  ansible.builtin.assert:
+    that:
+      - "':' in llm_node_listen_address"
+    fail_msg: >-
+      llm_node_listen_address must look like host:port (e.g. 127.0.0.1:11434),
+      got '{{ llm_node_listen_address }}'.

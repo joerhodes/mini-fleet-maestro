@@ -1,0 +1,11 @@
+---
+- name: restart llm_node
+  become: true
+  ansible.builtin.command: "launchctl bootout system/com.local.llm-node"
+  failed_when: false
+  changed_when: false
+
+- name: restart llm_node
+  become: true
+  ansible.builtin.command: "launchctl bootstrap system /Library/LaunchDaemons/com.local.llm-node.plist"
+  listen: restart llm_node

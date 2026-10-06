@@ -1,0 +1,28 @@
+---
+- name: Verify llm_node variables and conflicts
+  ansible.builtin.include_tasks: preflight.yml
+
+- name: Set up llm_node service account
+  ansible.builtin.include_tasks: user.yml
+
+- name: Install Ollama
+  ansible.builtin.include_tasks: install.yml
+
+- name: Deploy llm_node LaunchDaemon
+  ansible.builtin.include_tasks: service.yml
+
+- name: Pull configured models
+  ansible.builtin.include_tasks: models.yml
+  when:
+    - not ansible_check_mode
+    - llm_node_model_list | length > 0
+
+- name: Verify llm_node is serving
+  ansible.builtin.include_tasks: verify.yml
+  when: not ansible_check_mode
+
+- name: Verify inference runs on the GPU
+  ansible.builtin.include_tasks: gpu-check.yml
+  when:
+    - not ansible_check_mode
+    - llm_node_model_list | length > 0

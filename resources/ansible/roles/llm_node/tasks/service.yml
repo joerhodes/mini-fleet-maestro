@@ -1,0 +1,10 @@
+---
+- name: Deploy llm_node LaunchDaemon
+  become: true
+  ansible.builtin.template:
+    src: com.local.llm-node.plist.j2
+    dest: /Library/LaunchDaemons/com.local.llm-node.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+  notify: restart llm_node

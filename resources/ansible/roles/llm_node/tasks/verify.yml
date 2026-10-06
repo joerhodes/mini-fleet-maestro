@@ -1,0 +1,21 @@
+---
+- name: Apply pending llm_node restarts before verifying
+  ansible.builtin.meta: flush_handlers
+
+- name: Verify the Ollama API responds
+  ansible.builtin.uri:
+    url: "{{ llm_node_api_url }}/api/tags"
+    return_content: true
+  register: llm_node_tags
+  retries: 10
+  delay: 2
+  until: llm_node_tags.status == 200
+  changed_when: false
+
+- name: Assert every configured model is present
+  ansible.builtin.assert:
+    that:
+      - llm_node_model_list | difference(llm_node_tags.json.models | map(attribute='name') | list) | length == 0
+    fail_msg: >-
+      Models missing from {{ llm_node_api_url }}/api/tags:
+      {{ llm_node_model_list | difference(llm_node_tags.json.models | map(attribute='name') | list) }}
