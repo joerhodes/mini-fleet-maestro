@@ -1,0 +1,30 @@
+---
+- name: Load the first configured model
+  ansible.builtin.uri:
+    url: "{{ llm_node_api_url }}/api/generate"
+    method: POST
+    body_format: json
+    body:
+      model: "{{ llm_node_model_list | first }}"
+      prompt: ""
+      keep_alive: "2m"
+    timeout: 300
+  changed_when: false
+
+- name: Query loaded models
+  ansible.builtin.uri:
+    url: "{{ llm_node_api_url }}/api/ps"
+    return_content: true
+  register: llm_node_ps
+  changed_when: false
+
+- name: Assert the model is loaded on the GPU
+  ansible.builtin.assert:
+    that:
+      - llm_node_ps.json.models | selectattr('name', 'equalto', llm_node_model_list | first) | list | length > 0
+      - (llm_node_ps.json.models | selectattr('name', 'equalto', llm_node_model_list | first) | map(attribute='size_vram') | first) | int > 0
+    fail_msg: >-
+      {{ llm_node_model_list | first }} is not resident in GPU memory
+      (not loaded, or size_vram is 0), so inference is running on the CPU only.
+      A headless LaunchDaemon with no logged-in user may not get Metal GPU
+      access on this Mini; check /var/log/llm-node.err.log.

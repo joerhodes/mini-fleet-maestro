@@ -1,0 +1,23 @@
+# roles/llm_node/defaults/main.yml
+# llm_node_ollama_version and llm_node_ollama_sha256 come from role_config (no defaults).
+# llm_node_models (comma-separated) and llm_node_listen_address are optional role_config overrides.
+llm_node_models: ""
+llm_node_listen_address: "127.0.0.1:11434"
+
+llm_node_ollama_download_url: "https://github.com/ollama/ollama/releases/download/v{{ llm_node_ollama_version }}/ollama-darwin.tgz"
+llm_node_ollama_install_dir: "/Users/_llm_node/ollama-{{ llm_node_ollama_version }}"
+llm_node_ollama_binary: "{{ llm_node_ollama_install_dir }}/ollama"
+
+llm_node_data_dir: "/Users/_llm_node/data"
+llm_node_models_dir: "{{ llm_node_data_dir }}/models"
+
+# Model names: split, trimmed, empties dropped; a name with no tag becomes :latest (as /api/tags reports it).
+llm_node_model_list: >-
+  {{ (llm_node_models | default('', true) | string).split(',')
+     | map('trim') | select | map('regex_replace', '^([^/:]*|.*/[^/:]*)$', '\1:latest') | list }}
+
+# Client-side URL for the local API: wildcard binds are reached via loopback.
+llm_node_listen_host: "{{ llm_node_listen_address.rsplit(':', 1)[0] }}"
+llm_node_listen_port: "{{ llm_node_listen_address.rsplit(':', 1)[1] }}"
+llm_node_api_url: >-
+  http://{{ '127.0.0.1' if llm_node_listen_host in ['', '0.0.0.0', '[::]'] else llm_node_listen_host }}:{{ llm_node_listen_port }}

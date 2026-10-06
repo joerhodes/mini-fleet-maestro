@@ -103,6 +103,19 @@ resources/ansible/
         verify.yml        # flush handlers, uri check of :9100/metrics
       handlers/main.yml
       templates/com.local.node-exporter.plist.j2
+    llm_node/
+      defaults/main.yml   # listen address, install/data dirs, derived URL + model list
+      tasks/
+        main.yml          # index: preflight, user, install, service, models, verify, gpu-check
+        preflight.yml     # mining conflict guard + asserts role_config vars
+        user.yml          # _llm_node service account + data/models dirs
+        install.yml       # get_url + sha256, tar -xzf whole tree into versioned dir
+        service.yml       # LaunchDaemon deploy
+        models.yml        # /api/tags diff, async `ollama pull` for missing only
+        verify.yml        # flush handlers, /api/tags retry, assert models present
+        gpu-check.yml     # load first model, /api/ps size_vram must be > 0
+      handlers/main.yml
+      templates/com.local.llm-node.plist.j2
 ```
 
 `node_exporter` `role_config` keys (used verbatim as Ansible var names, no
@@ -111,6 +124,32 @@ defaults, preflight fails if missing): `node_exporter_version` (no leading
 deliberately does **not** set `ProcessType: Interactive` — that is
 xmrig-specific (keeps it off the efficiency cores for hashrate); a metrics
 exporter should run at default priority.
+
+`llm_node` (Ollama runtime; role name is runtime-neutral) `role_config` keys,
+all plain strings (`BuildServerVars` has no structured/JSON values):
+- Required, no defaults: `llm_node_ollama_version` (no leading `v`),
+  `llm_node_ollama_sha256` (checksum of `ollama-darwin.tgz`, listed in the
+  release's `sha256sum.txt`).
+- Optional: `llm_node_models` — comma-separated (`llama3.2:1b,qwen3:4b`);
+  trimmed, empties dropped, untagged names become `:latest`. Unset/empty skips
+  pulling, verify's model assert, and the GPU check. Models not in the list are
+  never removed.
+- Optional: `llm_node_listen_address`, default `127.0.0.1:11434` (**localhost
+  only**); exposing it to the LAN is an explicit config choice. API checks use
+  loopback when the bind is a wildcard.
+
+`llm_node` conflicts with `mining` (same CPU/memory): preflight fails if
+`mining` is in `app_roles`. Fix = remove the role from the server **and** stop
+the xmrig LaunchDaemon on the Mini; unassigning uninstalls nothing.
+
+Layout: tarball is flat (binary + dylibs + `mlx_metal_*` dirs), extracted whole
+into root-owned `/Users/_llm_node/ollama-<version>/` (`.extracted` marker file
+guards re-extraction); LaunchDaemon points at the binary there. Data lives in
+`/Users/_llm_node/data` (`HOME`) with models in `data/models` (`OLLAMA_MODELS`).
+Its LaunchDaemon deliberately leaves `ProcessType` **unset**; whether inference
+benefits from `Interactive` (as xmrig does) is a later benchmark, not a default.
+Model pulls use `async: 7200`/`poll: 30` and can exceed `ANSIBLE_TIMEOUT`
+(default 1800s) for large models.
 
 Config: `config/ansible.php` — `paths.root` / `paths.roles` / `paths.playbooks` /
 `paths.inventory` (nested under `paths`), plus `binary` (`ANSIBLE_PLAYBOOK_BIN`)

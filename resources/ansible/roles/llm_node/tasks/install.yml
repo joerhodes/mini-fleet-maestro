@@ -1,0 +1,46 @@
+---
+- name: Download and verify Ollama
+  ansible.builtin.get_url:
+    url: "{{ llm_node_ollama_download_url }}"
+    dest: "/tmp/ollama-{{ llm_node_ollama_version }}.tgz"
+    checksum: "sha256:{{ llm_node_ollama_sha256 }}"
+
+# The tarball is flat (no top-level directory) and ships the binary alongside
+# dylibs and mlx_metal_* dirs, so the whole tree goes into a versioned directory.
+- name: Ensure Ollama install directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ llm_node_ollama_install_dir }}"
+    state: directory
+    owner: root
+    group: wheel
+    mode: "0755"
+
+- name: Check for completed Ollama extraction
+  ansible.builtin.stat:
+    path: "{{ llm_node_ollama_install_dir }}/.extracted"
+  register: llm_node_extracted
+
+- name: Extract Ollama tarball
+  become: true
+  ansible.builtin.command:
+    argv:
+      - tar
+      - -xzf
+      - "/tmp/ollama-{{ llm_node_ollama_version }}.tgz"
+      - --no-same-owner
+      - -C
+      - "{{ llm_node_ollama_install_dir }}"
+  register: llm_node_extract
+  when: not llm_node_extracted.stat.exists
+  notify: restart llm_node
+
+- name: Mark Ollama extraction complete
+  become: true
+  ansible.builtin.file:
+    path: "{{ llm_node_ollama_install_dir }}/.extracted"
+    state: touch
+    owner: root
+    group: wheel
+    mode: "0644"
+  when: llm_node_extract is changed

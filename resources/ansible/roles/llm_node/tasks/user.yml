@@ -1,0 +1,19 @@
+---
+- name: Set up llm_node service account
+  ansible.builtin.include_tasks: ../../common/tasks/service-account.yml
+  vars:
+    service_account_name: _llm_node
+    service_account_comment: "MiniFleet Maestro — llm_node service account"
+
+- name: Ensure llm_node data directories exist
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: _llm_node
+    group: staff
+    mode: "0755"
+  loop:
+    - "{{ llm_node_data_dir }}"
+    - "{{ llm_node_models_dir }}"
+  ignore_errors: "{{ ansible_check_mode }}"
