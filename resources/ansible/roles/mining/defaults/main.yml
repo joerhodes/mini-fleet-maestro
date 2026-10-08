@@ -1,7 +1,7 @@
 # roles/mining/defaults/main.yml
-# This information should be collected differently
-# Putting it here for now
-xmrig_download_url: "https://github.com/xmrig/xmrig/releases/download/v6.26.0/xmrig-6.26.0-macos-arm64.tar.gz"
-xmrig_sha256: "6ae4eb4216e99a201ae9a3d2c3a7c275207c5165cfc25da1f3d735d6c4829c18"
-xmrig_release_dir: "xmrig-6.26.0"
+# xmrig_version and xmrin_sha256sum come from the mining role
+# Note that xmrig_version does not include the leading 'v'
+xmrig_download_url: "https://github.com/xmrig/xmrig/releases/download/v{{ xmrig_version }}/xmrig-{{ xmrig_version }}-macos-arm64.tar.gz"
+xmrig_sha256: "{{ xmrig_sha256sum }}"
+xmrig_release_dir: "xmrig-{{ xmrig_version }}"
 xmrig_install_dir: "/Users/_xmrig/xmrig"
