@@ -1,0 +1,53 @@
+# roles/forgejo_runner/defaults/main.yml
+# Pinned versions and checksums come from role_config (no defaults):
+#   forgejo_runner_lima_version, forgejo_runner_lima_sha256
+#   forgejo_runner_colima_version, forgejo_runner_colima_sha256
+#   forgejo_runner_docker_cli_version, forgejo_runner_docker_cli_sha256
+#   forgejo_runner_image_version, forgejo_runner_image_digest
+#   forgejo_runner_instance_url
+# Per-runner identity comes from server_config (host secrets), created in
+# Forgejo under Site Administration -> Actions -> Create new runner:
+#   forgejo_runner_uuid, forgejo_runner_token
+# Optional role_config overrides: the VM size, capacity and labels below.
+
+forgejo_runner_user: _forgejo_runner
+forgejo_runner_home: "/Users/{{ forgejo_runner_user }}"
+
+forgejo_runner_vm_cpu: "4"
+forgejo_runner_vm_memory: "6"
+forgejo_runner_vm_disk: "60"
+
+forgejo_runner_capacity: "1"
+# Comma-separated, as role_config stores strings.
+forgejo_runner_labels: "docker:docker://node:20-bookworm?platform=linux/arm64"
+forgejo_runner_label_list: >-
+  {{ (forgejo_runner_labels | default('', true) | string).split(',') | map('trim') | select | list }}
+
+forgejo_runner_image: "data.forgejo.org/forgejo/runner"
+forgejo_runner_image_ref: "{{ forgejo_runner_image }}:{{ forgejo_runner_image_version }}@{{ forgejo_runner_image_digest }}"
+forgejo_runner_container_name: forgejo-runner
+
+# Downloads
+forgejo_runner_lima_download_url: "https://github.com/lima-vm/lima/releases/download/v{{ forgejo_runner_lima_version }}/lima-{{ forgejo_runner_lima_version }}-Darwin-arm64.tar.gz"
+forgejo_runner_colima_download_url: "https://github.com/abiosoft/colima/releases/download/v{{ forgejo_runner_colima_version }}/colima-Darwin-arm64"
+forgejo_runner_docker_cli_download_url: "https://download.docker.com/mac/static/stable/aarch64/docker-cli_{{ forgejo_runner_docker_cli_version }}.tgz"
+
+# Versioned install directories (root-owned, like llm_node)
+forgejo_runner_lima_dir: "{{ forgejo_runner_home }}/lima-{{ forgejo_runner_lima_version }}"
+forgejo_runner_colima_dir: "{{ forgejo_runner_home }}/colima-{{ forgejo_runner_colima_version }}"
+forgejo_runner_docker_cli_dir: "{{ forgejo_runner_home }}/docker-cli-{{ forgejo_runner_docker_cli_version }}"
+
+forgejo_runner_path: >-
+  {{ forgejo_runner_colima_dir }}:{{ forgejo_runner_lima_dir }}/bin:{{ forgejo_runner_docker_cli_dir }}/bin:/usr/bin:/bin:/usr/sbin:/sbin
+forgejo_runner_docker_bin: "{{ forgejo_runner_docker_cli_dir }}/bin/docker"
+forgejo_runner_docker_host: "unix://{{ forgejo_runner_home }}/.colima/default/docker.sock"
+
+# Runner config lives on the macOS side; Colima mounts the service user's home into the VM.
+forgejo_runner_config_dir: "{{ forgejo_runner_home }}/runner"
+forgejo_runner_config_file: "{{ forgejo_runner_config_dir }}/config.yml"
+
+forgejo_runner_log_dir: /var/log/forgejo-runner
+
+# First boot of a fresh VM downloads its image, so allow up to 10 minutes.
+forgejo_runner_docker_ready_retries: 60
+forgejo_runner_docker_ready_delay: 10

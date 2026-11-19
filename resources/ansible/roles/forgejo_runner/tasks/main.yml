@@ -1,0 +1,19 @@
+---
+- name: Verify forgejo_runner variables
+  ansible.builtin.include_tasks: preflight.yml
+
+- name: Set up forgejo_runner service account
+  ansible.builtin.include_tasks: user.yml
+
+- name: Install Lima, Colima and the Docker CLI
+  ansible.builtin.include_tasks: install.yml
+
+- name: Deploy Colima LaunchDaemon
+  ansible.builtin.include_tasks: colima.yml
+
+- name: Deploy Forgejo runner
+  ansible.builtin.include_tasks: runner.yml
+
+- name: Verify the runner is up
+  ansible.builtin.include_tasks: verify.yml
+  when: not ansible_check_mode

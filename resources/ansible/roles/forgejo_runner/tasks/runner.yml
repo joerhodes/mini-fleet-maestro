@@ -1,0 +1,51 @@
+---
+# Holds the runner token, so 0600 and never shown in diffs or logs.
+- name: Deploy runner config
+  become: true
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ forgejo_runner_config_file }}"
+    owner: "{{ forgejo_runner_user }}"
+    group: staff
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: restart forgejo-runner
+
+- name: Check whether the pinned runner image is present
+  become: true
+  ansible.builtin.command:
+    argv: ["{{ forgejo_runner_docker_bin }}", image, inspect, "{{ forgejo_runner_image_ref }}"]
+  environment:
+    DOCKER_HOST: "{{ forgejo_runner_docker_host }}"
+  register: forgejo_runner_image_present
+  failed_when: false
+  changed_when: false
+  when: not ansible_check_mode
+
+# On a freshly started VM, Docker can answer before the VM's DNS is ready,
+# so the first pull may fail with a lookup error; retry for up to ~3 minutes.
+- name: Pull the pinned runner image
+  become: true
+  ansible.builtin.command:
+    argv: ["{{ forgejo_runner_docker_bin }}", pull, "{{ forgejo_runner_image_ref }}"]
+  environment:
+    DOCKER_HOST: "{{ forgejo_runner_docker_host }}"
+  register: forgejo_runner_pull
+  retries: 12
+  delay: 15
+  until: forgejo_runner_pull.rc == 0
+  when:
+    - not ansible_check_mode
+    - forgejo_runner_image_present.rc != 0
+  notify: restart forgejo-runner
+
+- name: Deploy forgejo-runner LaunchDaemon
+  become: true
+  ansible.builtin.template:
+    src: com.local.forgejo-runner.plist.j2
+    dest: /Library/LaunchDaemons/com.local.forgejo-runner.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+  notify: restart forgejo-runner

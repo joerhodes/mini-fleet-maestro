@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.local.forgejo-runner</string>
+
+    <!--
+    Runs the runner container in the foreground so launchd supervises it.
+    A leftover container (e.g. after a VM crash) is removed first, or the
+    fixed name would block every restart. Until Colima's Docker answers,
+    docker run fails and launchd retries after ThrottleInterval.
+    The runner image runs as 1000:1000, which can't open the VM's
+    docker.sock (root:docker), so the container runs as root (0:0).
+    Socket access is root-equivalent in the VM either way; job containers
+    get neither the socket (docker_host "-") nor privileged mode.
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>{{ forgejo_runner_docker_bin }} rm -f {{ forgejo_runner_container_name }} &gt;/dev/null 2&gt;&amp;1; exec {{ forgejo_runner_docker_bin }} run --rm --name {{ forgejo_runner_container_name }} --pull never --user 0:0 -v /var/run/docker.sock:/var/run/docker.sock -v {{ forgejo_runner_config_file }}:/config/config.yml:ro -v forgejo-runner-data:/data -w /data {{ forgejo_runner_image_ref }} forgejo-runner daemon --config /config/config.yml</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{ forgejo_runner_home }}</string>
+        <key>PATH</key>
+        <string>{{ forgejo_runner_path }}</string>
+        <key>DOCKER_HOST</key>
+        <string>{{ forgejo_runner_docker_host }}</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>{{ forgejo_runner_home }}</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>15</integer>
+
+    <key>UserName</key>
+    <string>{{ forgejo_runner_user }}</string>
+
+    <key>StandardOutPath</key>
+    <string>{{ forgejo_runner_log_dir }}/runner.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ forgejo_runner_log_dir }}/runner.err.log</string>
+</dict>
+</plist>
