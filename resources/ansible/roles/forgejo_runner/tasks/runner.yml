@@ -23,12 +23,18 @@
   changed_when: false
   when: not ansible_check_mode
 
+# On a freshly started VM, Docker can answer before the VM's DNS is ready,
+# so the first pull may fail with a lookup error; retry for up to ~3 minutes.
 - name: Pull the pinned runner image
   become: true
   ansible.builtin.command:
     argv: ["{{ forgejo_runner_docker_bin }}", pull, "{{ forgejo_runner_image_ref }}"]
   environment:
     DOCKER_HOST: "{{ forgejo_runner_docker_host }}"
+  register: forgejo_runner_pull
+  retries: 12
+  delay: 15
+  until: forgejo_runner_pull.rc == 0
   when:
     - not ansible_check_mode
     - forgejo_runner_image_present.rc != 0

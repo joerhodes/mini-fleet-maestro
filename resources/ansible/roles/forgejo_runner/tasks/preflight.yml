@@ -2,8 +2,7 @@
 - name: Verify forgejo_runner role_config is present
   ansible.builtin.assert:
     that:
-      - vars[item] is defined
-      - vars[item] | string | length > 0
+      - lookup('ansible.builtin.vars', item, default='') | string | length > 0
     fail_msg: >-
       Missing forgejo_runner config '{{ item }}'; set it via role_config
       (php artisan role:config forgejo_runner {{ item }} <value>).
