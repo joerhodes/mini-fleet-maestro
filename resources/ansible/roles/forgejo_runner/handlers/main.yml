@@ -1,0 +1,22 @@
+---
+- name: restart colima
+  become: true
+  ansible.builtin.command: "launchctl bootout system/com.local.colima"
+  failed_when: false
+  changed_when: false
+
+- name: restart colima
+  become: true
+  ansible.builtin.command: "launchctl bootstrap system /Library/LaunchDaemons/com.local.colima.plist"
+  listen: restart colima
+
+- name: restart forgejo-runner
+  become: true
+  ansible.builtin.command: "launchctl bootout system/com.local.forgejo-runner"
+  failed_when: false
+  changed_when: false
+
+- name: restart forgejo-runner
+  become: true
+  ansible.builtin.command: "launchctl bootstrap system /Library/LaunchDaemons/com.local.forgejo-runner.plist"
+  listen: restart forgejo-runner

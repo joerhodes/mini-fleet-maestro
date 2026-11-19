@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.local.colima</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{ forgejo_runner_colima_dir }}/colima</string>
+        <string>start</string>
+        <string>--foreground</string>
+        <string>--vm-type</string>
+        <string>vz</string>
+        <string>--cpu</string>
+        <string>{{ forgejo_runner_vm_cpu }}</string>
+        <string>--memory</string>
+        <string>{{ forgejo_runner_vm_memory }}</string>
+        <string>--disk</string>
+        <string>{{ forgejo_runner_vm_disk }}</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{ forgejo_runner_home }}</string>
+        <key>PATH</key>
+        <string>{{ forgejo_runner_path }}</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>{{ forgejo_runner_home }}</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>UserName</key>
+    <string>{{ forgejo_runner_user }}</string>
+
+    <!--
+    Same reason as xmrig: keep the VM off the efficiency cores only.
+    -->
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <key>StandardOutPath</key>
+    <string>{{ forgejo_runner_log_dir }}/colima.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ forgejo_runner_log_dir }}/colima.err.log</string>
+</dict>
+</plist>

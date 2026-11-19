@@ -1,0 +1,45 @@
+---
+- name: Set up forgejo_runner service account
+  ansible.builtin.include_tasks: ../../common/tasks/service-account.yml
+  vars:
+    service_account_name: "{{ forgejo_runner_user }}"
+    service_account_comment: "MiniFleet Maestro — forgejo_runner service account"
+
+- name: Ensure runner config directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ forgejo_runner_config_dir }}"
+    state: directory
+    owner: "{{ forgejo_runner_user }}"
+    group: staff
+    mode: "0750"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+# launchd opens StandardOutPath/StandardErrorPath as the job's UserName,
+# which can't create files in /var/log. Without these, the job exits 78 (EX_CONFIG).
+- name: Ensure log directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ forgejo_runner_log_dir }}"
+    state: directory
+    owner: "{{ forgejo_runner_user }}"
+    group: staff
+    mode: "0755"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Ensure log files exist
+  become: true
+  ansible.builtin.file:
+    path: "{{ forgejo_runner_log_dir }}/{{ item }}"
+    state: touch
+    owner: "{{ forgejo_runner_user }}"
+    group: staff
+    mode: "0644"
+    access_time: preserve
+    modification_time: preserve
+  loop:
+    - colima.out.log
+    - colima.err.log
+    - runner.out.log
+    - runner.err.log
+  ignore_errors: "{{ ansible_check_mode }}"

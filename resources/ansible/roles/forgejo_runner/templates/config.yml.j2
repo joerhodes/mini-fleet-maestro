@@ -1,0 +1,33 @@
+# Managed by MiniFleet Maestro (forgejo_runner role). Local edits are overwritten.
+log:
+  level: info
+  job_level: info
+
+runner:
+  capacity: {{ forgejo_runner_capacity }}
+  timeout: 3h
+  shutdown_timeout: 3h
+  insecure: false
+  fetch_timeout: 30s
+  fetch_interval: 2s
+  report_interval: 1s
+  labels: {{ forgejo_runner_label_list | to_json }}
+
+cache:
+  enabled: true
+
+container:
+  network: ""
+  enable_ipv6: false
+  privileged: false
+  valid_volumes: []
+  docker_host: "-"
+  force_pull: false
+  force_rebuild: false
+
+server:
+  connections:
+    forgejo:
+      url: {{ forgejo_runner_instance_url }}
+      uuid: {{ forgejo_runner_uuid }}
+      token: {{ forgejo_runner_token }}

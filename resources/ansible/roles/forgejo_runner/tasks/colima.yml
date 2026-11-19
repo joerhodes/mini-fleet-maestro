@@ -1,0 +1,31 @@
+---
+- name: Deploy Colima LaunchDaemon
+  become: true
+  ansible.builtin.template:
+    src: com.local.colima.plist.j2
+    dest: /Library/LaunchDaemons/com.local.colima.plist
+    owner: root
+    group: wheel
+    mode: "0644"
+  notify: restart colima
+
+- name: Apply pending Colima restarts
+  ansible.builtin.meta: flush_handlers
+
+# Docker commands run as root against the service user's socket, so no become_user is needed.
+- name: Wait for Docker inside Colima to respond
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "{{ forgejo_runner_docker_bin }}"
+      - info
+      - --format
+      - "{{ '{{' }}.ServerVersion{{ '}}' }}"
+  environment:
+    DOCKER_HOST: "{{ forgejo_runner_docker_host }}"
+  register: forgejo_runner_docker_info
+  retries: "{{ forgejo_runner_docker_ready_retries }}"
+  delay: "{{ forgejo_runner_docker_ready_delay }}"
+  until: forgejo_runner_docker_info.rc == 0
+  changed_when: false
+  when: not ansible_check_mode

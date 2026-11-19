@@ -1,0 +1,35 @@
+---
+- name: Apply pending runner restarts before verifying
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for the runner container to be running
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "{{ forgejo_runner_docker_bin }}"
+      - inspect
+      - --format
+      - "{{ '{{' }}.State.Status{{ '}}' }} {{ '{{' }}.Config.Image{{ '}}' }}"
+      - "{{ forgejo_runner_container_name }}"
+  environment:
+    DOCKER_HOST: "{{ forgejo_runner_docker_host }}"
+  register: forgejo_runner_container
+  retries: 12
+  delay: 5
+  until: forgejo_runner_container.rc == 0 and forgejo_runner_container.stdout.startswith('running ')
+  changed_when: false
+
+- name: Assert the container runs the pinned image
+  ansible.builtin.assert:
+    that:
+      - forgejo_runner_container.stdout.split(' ', 1)[1] == forgejo_runner_image_ref
+    fail_msg: >-
+      {{ forgejo_runner_container_name }} is running '{{ forgejo_runner_container.stdout.split(' ', 1)[1] }}',
+      expected '{{ forgejo_runner_image_ref }}'.
+
+- name: Show where to confirm the runner registered
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }}: runner container is up. Confirm it shows as Idle in
+      Forgejo (Site Administration -> Actions -> Runners); runner logs are in
+      {{ forgejo_runner_log_dir }}/runner.err.log.

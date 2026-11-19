@@ -1,0 +1,46 @@
+---
+- name: Verify forgejo_runner role_config is present
+  ansible.builtin.assert:
+    that:
+      - vars[item] is defined
+      - vars[item] | string | length > 0
+    fail_msg: >-
+      Missing forgejo_runner config '{{ item }}'; set it via role_config
+      (php artisan role:config forgejo_runner {{ item }} <value>).
+    quiet: true
+  loop:
+    - forgejo_runner_lima_version
+    - forgejo_runner_lima_sha256
+    - forgejo_runner_colima_version
+    - forgejo_runner_colima_sha256
+    - forgejo_runner_docker_cli_version
+    - forgejo_runner_docker_cli_sha256
+    - forgejo_runner_image_version
+    - forgejo_runner_image_digest
+    - forgejo_runner_instance_url
+
+- name: Verify forgejo_runner host secrets are present
+  ansible.builtin.assert:
+    that:
+      - forgejo_runner_uuid is defined
+      - forgejo_runner_uuid | length > 0
+      - forgejo_runner_token is defined
+      - forgejo_runner_token | length > 0
+    fail_msg: >-
+      Missing forgejo_runner_uuid / forgejo_runner_token in this server's
+      server_config. Create the runner in Forgejo (Site Administration ->
+      Actions -> Create new runner) and store both values as host secrets.
+    quiet: true
+  no_log: true
+
+- name: Verify the image digest looks like a digest
+  ansible.builtin.assert:
+    that:
+      - forgejo_runner_image_digest is match('^sha256:[0-9a-f]{64}$')
+    fail_msg: "forgejo_runner_image_digest must be sha256:<64 hex>, got '{{ forgejo_runner_image_digest }}'."
+
+- name: Verify at least one runner label
+  ansible.builtin.assert:
+    that:
+      - forgejo_runner_label_list | length > 0
+    fail_msg: "forgejo_runner_labels is empty."

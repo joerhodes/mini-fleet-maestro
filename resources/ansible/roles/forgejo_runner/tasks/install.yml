@@ -1,0 +1,80 @@
+---
+# Lima: bin/ and share/ must stay together, so the tarball goes into a versioned directory.
+- name: Download and verify Lima
+  ansible.builtin.get_url:
+    url: "{{ forgejo_runner_lima_download_url }}"
+    dest: "/tmp/lima-{{ forgejo_runner_lima_version }}.tar.gz"
+    checksum: "sha256:{{ forgejo_runner_lima_sha256 }}"
+
+- name: Download and verify the Docker CLI
+  ansible.builtin.get_url:
+    url: "{{ forgejo_runner_docker_cli_download_url }}"
+    dest: "/tmp/docker-cli-{{ forgejo_runner_docker_cli_version }}.tgz"
+    checksum: "sha256:{{ forgejo_runner_docker_cli_sha256 }}"
+
+- name: Ensure versioned install directories exist
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: wheel
+    mode: "0755"
+  loop:
+    - "{{ forgejo_runner_lima_dir }}"
+    - "{{ forgejo_runner_colima_dir }}"
+    - "{{ forgejo_runner_docker_cli_dir }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Check for completed extractions
+  ansible.builtin.stat:
+    path: "{{ item }}/.extracted"
+  loop:
+    - "{{ forgejo_runner_lima_dir }}"
+    - "{{ forgejo_runner_docker_cli_dir }}"
+  register: forgejo_runner_extracted
+
+- name: Extract Lima and the Docker CLI
+  become: true
+  ansible.builtin.command:
+    argv:
+      - tar
+      - -xzf
+      - "{{ item.archive }}"
+      - --no-same-owner
+      - -C
+      - "{{ item.dir }}"
+  loop:
+    - { archive: "/tmp/lima-{{ forgejo_runner_lima_version }}.tar.gz", dir: "{{ forgejo_runner_lima_dir }}" }
+    - { archive: "/tmp/docker-cli-{{ forgejo_runner_docker_cli_version }}.tgz", dir: "{{ forgejo_runner_docker_cli_dir }}" }
+  loop_control:
+    label: "{{ item.dir }}"
+  when: not (forgejo_runner_extracted.results | selectattr('item', 'equalto', item.dir) | map(attribute='stat.exists') | first)
+  register: forgejo_runner_extract
+  notify: restart colima
+
+- name: Mark extractions complete
+  become: true
+  ansible.builtin.file:
+    path: "{{ item.item.dir }}/.extracted"
+    state: touch
+    owner: root
+    group: wheel
+    mode: "0644"
+  loop: "{{ forgejo_runner_extract.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.dir | default('') }}"
+  when: item is changed
+
+# Colima ships as a single binary, so it is downloaded straight into place.
+- name: Download and verify Colima
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ forgejo_runner_colima_download_url }}"
+    dest: "{{ forgejo_runner_colima_dir }}/colima"
+    checksum: "sha256:{{ forgejo_runner_colima_sha256 }}"
+    owner: root
+    group: wheel
+    mode: "0755"
+  notify: restart colima
+  ignore_errors: "{{ ansible_check_mode }}"
